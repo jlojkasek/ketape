@@ -17,11 +17,9 @@
   <string name="settings_zone_badge">Farbige Zonenmarkierung</string>
   <string name="settings_off">Aus</string>
   <string name="settings_balance">Links-rechts-Balance anzeigen</string>
-  <string name="settings_balance_detail">Zeigt unter der Trittfrequenz die Leistungsverteilung beider Beine. Dafür brauchst du einen Leistungsmesser, der Balance-Daten liefert.</string>
   <string name="settings_balance_warning">Balance-Warnschwelle</string>
   <string name="settings_balance_warning_value">Warnschwelle · %1$s</string>
   <string name="settings_balance_warning_threshold">%1$d Prozentpunkte</string>
-  <string name="settings_balance_warning_detail">Das Feld wird rot, wenn der Leistungsanteil eines Beins um mehr als die gewählte Schwelle von der Hälfte abweicht. Bei 5 Prozentpunkten wird 44/56 rot, 45/55 bleibt normal.</string>
   <string name="settings_about">Über kEtape</string>
   <string name="settings_setup">Bearbeite eine Datenseite in deinem Karoo-Profil und wähle unter kEtape das gewünschte Feld.</string>
   <string name="settings_updates">Updates findest du in der App-Verwaltung auf dem Karoo.</string>
@@ -101,4 +99,13 @@
   <string name="reserve_available_description">Theoretische Dauerleistung aus deinem verbleibenden W′.</string>
   <string name="reserve_insights">Réserve – Statistik</string>
   <string name="reserve_insights_description">Fasst die Nutzung deiner W′-Reserve während dieser Fahrt zusammen.</string>
+  <string name="pedal_classic">Classic</string>
+  <string name="pedal_performance">Performance</string>
+  <string name="pedal_dynamics">Dynamics</string>
+  <string name="pedal_settings_title">Trittfrequenz und Pedale</string>
+  <string name="pedal_layout_title">Pedalansicht</string>
+  <string name="pedal_layout_value">Ansicht · %1$s</string>
+  <string name="pedal_classic_detail">Durchschnitt und Maximum der Trittfrequenz. Optional Links-rechts-Balance.</string>
+  <string name="pedal_performance_detail">Links-rechts-Balance und mittlere Trittgleichmäßigkeit (PS). Der Mittelwert braucht einen Messwert von beiden Pedalen.</string>
+  <string name="pedal_dynamics_detail">Links-rechts-Balance, Drehmomenteffektivität und Gleichmäßigkeit. TE und PS benötigen kompatible Pedale.</string>
 </resources>

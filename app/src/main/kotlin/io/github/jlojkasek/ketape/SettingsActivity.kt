@@ -113,48 +113,10 @@ class SettingsActivity : Activity() {
             addView(label(R.string.settings_smoothing_detail))
             addView(smoothingButton("power", R.string.field_0))
             addView(smoothingButton("heart-rate", R.string.field_3))
-            addView(smoothingButton("cadence", R.string.field_6))
             addView(smoothingButton("speed", R.string.field_4))
 
-            addView(label(R.string.field_6, heading = true))
-            val balanceEnabled = prefs.getBoolean("cadence_balance", false)
-            val warningSettings = LinearLayout(this@SettingsActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                visibility = if (balanceEnabled) View.VISIBLE else View.GONE
-                addView(label(R.string.settings_balance_warning_detail))
-                addView(Button(this@SettingsActivity).apply {
-                    val options = balanceWarningThresholds.map { threshold ->
-                        if (threshold == 0) getString(R.string.settings_off)
-                        else getString(R.string.settings_balance_warning_threshold, threshold)
-                    }.toTypedArray()
-                    var selected = balanceWarningThresholds.indexOf(prefs.getInt(BALANCE_WARNING_KEY, 0))
-                        .coerceAtLeast(0)
-                    text = getString(R.string.settings_balance_warning_value, options[selected])
-                    setOnClickListener {
-                        AlertDialog.Builder(this@SettingsActivity)
-                            .setTitle(R.string.settings_balance_warning)
-                            .setSingleChoiceItems(options, selected) { dialog, index ->
-                                selected = index
-                                prefs.edit().putInt(BALANCE_WARNING_KEY, balanceWarningThresholds[index]).apply()
-                                text = getString(R.string.settings_balance_warning_value, options[index])
-                                dialog.dismiss()
-                            }
-                            .setNegativeButton(R.string.settings_cancel, null)
-                            .show()
-                    }
-                })
-            }
-            addView(Switch(this@SettingsActivity).apply {
-                setText(R.string.settings_balance)
-                minHeight = dp(48)
-                isChecked = balanceEnabled
-                setOnCheckedChangeListener { _, enabled ->
-                    prefs.edit().putBoolean("cadence_balance", enabled).apply()
-                    warningSettings.visibility = if (enabled) View.VISIBLE else View.GONE
-                }
-            })
-            addView(label(R.string.settings_balance_detail))
-            addView(warningSettings)
+            addView(label(R.string.pedal_settings_title, heading = true))
+            addView(pedalSettings())
 
             addView(label(R.string.field_3, heading = true))
             addView(Switch(this@SettingsActivity).apply {
@@ -441,6 +403,71 @@ class SettingsActivity : Activity() {
             }
             override fun onViewDetachedFromWindow(view: View) = prefs.unregisterOnSharedPreferenceChangeListener(listener)
         })
+        refresh()
+    }
+
+    private fun pedalSettings() = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        val titles = listOf(R.string.pedal_classic, R.string.pedal_performance, R.string.pedal_dynamics)
+        val descriptions = listOf(R.string.pedal_classic_detail, R.string.pedal_performance_detail,
+            R.string.pedal_dynamics_detail)
+        var layout = PedalLayout.from(prefs.getString(PEDAL_LAYOUT_KEY, null))
+        val detail = label(descriptions[layout.ordinal])
+        val balance = Switch(this@SettingsActivity).apply {
+            setText(R.string.settings_balance)
+            minHeight = dp(48)
+            isChecked = prefs.getBoolean("cadence_balance", false)
+        }
+        val warning = Button(this@SettingsActivity).apply {
+            val options = balanceWarningThresholds.map { threshold ->
+                if (threshold == 0) getString(R.string.settings_off)
+                else getString(R.string.settings_balance_warning_threshold, threshold)
+            }.toTypedArray()
+            var selected = balanceWarningThresholds.indexOf(prefs.getInt(BALANCE_WARNING_KEY, 0))
+                .coerceAtLeast(0)
+            text = getString(R.string.settings_balance_warning_value, options[selected])
+            setOnClickListener {
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle(R.string.settings_balance_warning)
+                    .setSingleChoiceItems(options, selected) { dialog, index ->
+                        selected = index
+                        prefs.edit().putInt(BALANCE_WARNING_KEY, balanceWarningThresholds[index]).apply()
+                        text = getString(R.string.settings_balance_warning_value, options[index])
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.settings_cancel, null)
+                    .show()
+            }
+        }
+        val picker = Button(this@SettingsActivity)
+        fun refresh() {
+            picker.text = getString(R.string.pedal_layout_value, getString(titles[layout.ordinal]))
+            detail.setText(descriptions[layout.ordinal])
+            balance.visibility = if (layout == PedalLayout.CLASSIC) View.VISIBLE else View.GONE
+            warning.visibility = if (layout != PedalLayout.CLASSIC || balance.isChecked)
+                View.VISIBLE else View.GONE
+        }
+        picker.setOnClickListener {
+            AlertDialog.Builder(this@SettingsActivity)
+                .setTitle(R.string.pedal_layout_title)
+                .setSingleChoiceItems(titles.map { getString(it) }.toTypedArray(), layout.ordinal) { dialog, index ->
+                    layout = PedalLayout.entries[index]
+                    prefs.edit().putString(PEDAL_LAYOUT_KEY, layout.key).apply()
+                    refresh()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.settings_cancel, null)
+                .show()
+        }
+        balance.setOnCheckedChangeListener { _, enabled ->
+            prefs.edit().putBoolean("cadence_balance", enabled).apply()
+            refresh()
+        }
+        addView(picker)
+        addView(detail)
+        addView(smoothingButton("cadence", R.string.field_6))
+        addView(balance)
+        addView(warning)
         refresh()
     }
 

@@ -7,6 +7,21 @@ internal object PreviewValues {
     val previewReference = previewRide.mapValues { (_, value) -> value + 25 }
 
     data class Frame(val main: Double, val average: Double, val secondary: Double, val balanceLeft: Double = 48.0)
+    fun cadence(tick: Int): Double? = when (Math.floorMod(tick / 2, 6)) {
+        4 -> 0.0
+        5 -> null
+        else -> frame("cadence", tick).main
+    }
+
+    fun pedals(tick: Int): PedalMetrics = when (Math.floorMod(tick / 2, 6)) {
+        0 -> PedalMetrics(48.0, 84.0, 87.0, 24.0, 26.0)
+        1 -> PedalMetrics(49.5, 89.0, 91.0, 28.0, 30.0)
+        2 -> PedalMetrics(38.0, 76.0, 85.0, 19.0, 25.0)
+        3 -> PedalMetrics(teLeft = 82.0, psLeft = 23.0)
+        4 -> PedalMetrics(teLeft = 0.0, teRight = 0.0, psLeft = 0.0, psRight = 0.0)
+        else -> PedalMetrics()
+    }
+
     fun record(field: String, tick: Int): RideBest? {
         // Keep the editor responsive by showing the sample for two render ticks.
         val step = Math.floorMod(tick, 24)

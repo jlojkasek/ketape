@@ -17,11 +17,9 @@
   <string name="settings_zone_badge">Colored zone badge</string>
   <string name="settings_off">Off</string>
   <string name="settings_balance">Show left/right balance</string>
-  <string name="settings_balance_detail">Shows how power is split between your legs below cadence. Requires a power meter that reports balance data.</string>
   <string name="settings_balance_warning">Balance warning threshold</string>
   <string name="settings_balance_warning_value">Warning threshold · %1$s</string>
   <string name="settings_balance_warning_threshold">%1$d percentage points</string>
-  <string name="settings_balance_warning_detail">The field turns red when either leg differs from half of the total power by more than the selected threshold. At 5 percentage points, 44/56 turns red and 45/55 stays normal.</string>
   <string name="settings_about">About kEtape</string>
   <string name="settings_setup">Edit a data page in your Karoo profile and select a field under kEtape.</string>
   <string name="settings_updates">Find updates in the app manager on your Karoo.</string>
@@ -102,4 +100,13 @@
     <string name="reserve_insights">Réserve – Insights</string>
     <string name="reserve_insights_description">Summarises how you used your W′ during this ride.</string>
     <string name="settings_tab_reserve" translatable="false">Réserve</string>
+  <string name="pedal_classic">Classic</string>
+  <string name="pedal_performance">Performance</string>
+  <string name="pedal_dynamics">Dynamics</string>
+  <string name="pedal_settings_title">Cadence and pedals</string>
+  <string name="pedal_layout_title">Pedal layout</string>
+  <string name="pedal_layout_value">Layout · %1$s</string>
+  <string name="pedal_classic_detail">Average and maximum cadence. Optional left/right balance.</string>
+  <string name="pedal_performance_detail">Left/right balance and average pedal smoothness (PS). The average requires a reading from each pedal.</string>
+  <string name="pedal_dynamics_detail">Left/right balance, torque effectiveness and pedal smoothness. TE and PS require compatible pedals.</string>
 </resources>

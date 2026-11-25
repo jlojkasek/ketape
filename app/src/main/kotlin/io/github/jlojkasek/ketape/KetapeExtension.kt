@@ -119,23 +119,9 @@ private class StackedType(
                 }
             }
         }
-        // Balance is a multi-value stream: read its explicit LEFT field, never singleValue.
-        val balanceType = DataType.Type.PEDAL_POWER_BALANCE
-        fun subscribeBalance(): String =
-            system.addConsumer<OnStreamState>(OnStreamState.StartStreaming(balanceType)) { event ->
-                val point = (event.state as? StreamState.Streaming)?.dataPoint
-                val left = point?.values?.get(DataType.Field.PEDAL_POWER_BALANCE_LEFT)
-                val power = point?.values?.get(DataType.Field.POWER)
-                if (left != null && left.isFinite() && left in 0.0..100.0 && (power == null || power > 0.0)) {
-                    values[balanceType] = left
-                    timestamps[balanceType] = SystemClock.elapsedRealtime()
-                } else {
-                    values.remove(balanceType)
-                    timestamps.remove(balanceType)
-                }
-            }
         val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
-        var balanceId: String? = null
+        val pedalSamples = PedalSamples()
+        val pedalIds = mutableMapOf<String, String>()
         val backgroundDrawable = if (config.boundariesEnabled) {
             R.drawable.field_background_rounded
         } else {
@@ -169,7 +155,7 @@ private class StackedType(
                     // The compact main group is measured below; footer cells keep native autosizing.
                     fun rawValue(metric: Metric, index: Int): Double? =
                         if (config.preview) when (index) {
-                            0 -> previewFrame.main
+                            0 -> if (stack.id == "cadence") PreviewValues.cadence(previewTick) else previewFrame.main
                             1 -> previewFrame.average
                             else -> previewFrame.secondary
                         } else {
@@ -191,28 +177,32 @@ private class StackedType(
                             if (isPower) systemColors.power else systemColors.heart) else null
                     val backgroundZone = zone?.takeIf { colorMode == "background" }
                     val badgeZone = zone?.takeIf { colorMode == "badge" }
-                    val showBalance = stack.id == "cadence" && prefs.getBoolean("cadence_balance", false)
-                    if (!config.preview) {
-                        if (showBalance && balanceId == null) balanceId = subscribeBalance()
-                        if (!showBalance && balanceId != null) {
-                            system.removeConsumer(requireNotNull(balanceId))
-                            balanceId = null
-                            values.remove(balanceType)
-                            timestamps.remove(balanceType)
+                    val pedalLayout = if (stack.id == "cadence")
+                        PedalLayout.from(prefs.getString(PEDAL_LAYOUT_KEY, null)) else PedalLayout.CLASSIC
+                    val showBalance = stack.id == "cadence" &&
+                        (pedalLayout != PedalLayout.CLASSIC || prefs.getBoolean("cadence_balance", false))
+                    if (!config.preview && stack.id == "cadence") {
+                        val sources = pedalSources(pedalLayout, showBalance)
+                        (pedalIds.keys - sources).forEach { type ->
+                            pedalIds.remove(type)?.let(system::removeConsumer)
+                            pedalSamples.update(type, null, SystemClock.elapsedRealtime())
+                        }
+                        (sources - pedalIds.keys).forEach { type ->
+                            pedalIds[type] = system.addConsumer<OnStreamState>(OnStreamState.StartStreaming(type)) { event ->
+                                pedalSamples.update(type, (event.state as? StreamState.Streaming)?.dataPoint?.values,
+                                    SystemClock.elapsedRealtime())
+                            }
                         }
                     }
-                    val balance = if (showBalance) {
-                        val timestamp = timestamps[balanceType]
-                        val left = if (config.preview) previewFrame.balanceLeft else if (timestamp != null &&
-                            SystemClock.elapsedRealtime() - timestamp <= 5000) values[balanceType] else null
-                        pedalBalance(left)
-                    } else null
+                    val pedals = if (config.preview) PreviewValues.pedals(previewTick)
+                        else pedalSamples.snapshot(SystemClock.elapsedRealtime())
+                    val balance = if (showBalance) pedals.balance else null
                     val balanceWarning = exceedsBalanceThreshold(balance, prefs.getInt(BALANCE_WARNING_KEY, 0))
                     val contentColor = if (balanceWarning) Color.WHITE else backgroundZone?.foreground ?: fg
                     val fieldColor = if (balanceWarning) Color.rgb(185, 28, 28) else backgroundZone?.background ?: bg
                     view.setImageViewResource(R.id.field_background, backgroundDrawable)
                     view.setInt(R.id.field_background, "setColorFilter", fieldColor)
-                    listOf(R.id.main, R.id.unit, R.id.left, R.id.right).forEach {
+                    listOf(R.id.main, R.id.unit, R.id.left, R.id.right, R.id.pedal_header).forEach {
                         view.setTextColor(it, contentColor)
                     }
                     view.setInt(R.id.zone, "setBackgroundColor", badgeZone?.background ?: Color.TRANSPARENT)
@@ -250,10 +240,9 @@ private class StackedType(
                     view.setTextViewText(R.id.right, right?.let {
                         "${stack.rightLabel} ${format(rawValue(it, 2), it.format)}$leftUnit"
                     } ?: "")
-                    if (showBalance) {
-                        view.setTextViewText(R.id.left, "L ${balance?.first?.let { "$it%" } ?: "--"}")
-                        view.setTextViewText(R.id.right, "R ${balance?.second?.let { "$it%" } ?: "--"}")
-                        view.setViewVisibility(R.id.right, android.view.View.VISIBLE)
+                    if (stack.id == "cadence") {
+                        PedalFieldLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
+                            config.textSize, mainText, pedalLayout, showBalance, pedals, balanceWarning)
                     }
                     val record = when {
                         config.preview -> PreviewValues.record(stack.id, previewTick)
@@ -279,7 +268,7 @@ private class StackedType(
                     delay(1100) // Karoo permits at most one RemoteViews update per second.
                 }
             } finally {
-                balanceId?.let(system::removeConsumer)
+                pedalIds.values.forEach(system::removeConsumer)
             }
         }
         emitter.setCancellable {
