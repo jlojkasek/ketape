@@ -25,6 +25,9 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private val metrics = mutableListOf<String>()
     private var profileConsumer: String? = null
     private var stateConsumer: String? = null
+    private var idleConfirmed = false
+    private var lastIdleSyncAttempt: Long? = null
+    private var idleSync: Job? = null
     private var lastHeartReading: Long? = null
     @Volatile private var rideState: RideState = RideState.Idle
     @Volatile private var periods = records.periods
@@ -58,13 +61,32 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
                     checkRecords(rideValues.sample(now / 1000, watts, bpm?.value))
                 }
                 if (rideState != RideState.Idle && records.connected) showPending(now)
+                syncWhileIdle(now)
                 reserve.tick()
                 delay(1000 - (SystemClock.elapsedRealtime() % 1000))
             }
         }
     }
 
+    private fun syncWhileIdle(now: Long) {
+        if (!idleConfirmed || !records.connected || idleSync?.isActive == true) return
+        if (lastIdleSyncAttempt?.let { now - it < 15 * 60 * 1000L } == true) return
+        lastIdleSyncAttempt = now
+        idleSync = scope.launch { syncReferences() }
+    }
+
+    private suspend fun syncReferences(periods: List<String> = records.periods) {
+        try {
+            records.sync(periods = periods)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Keep cached references when Intervals.icu is unavailable.
+        }
+    }
+
     private fun onRideState(state: RideState) {
+        idleConfirmed = state == RideState.Idle
         continuity.observe(state)
         reserve.onState(state)
         if (state == rideState) return
@@ -72,15 +94,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
             periods = records.periods
             val ridePeriods = periods
             if (records.connected) {
-                scope.launch {
-                    try {
-                        records.sync(periods = ridePeriods)
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (_: Exception) {
-                        // Keep the cached reference when the network is unavailable.
-                    }
-                }
+                scope.launch { syncReferences(ridePeriods) }
             }
         }
         rideState = state
