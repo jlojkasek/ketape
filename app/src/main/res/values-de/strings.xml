@@ -77,10 +77,10 @@
   <string name="power_best_table">Power Best Tabelle</string>
   <string name="power_best_auto">Power Best Automatisch</string>
   <string name="power_best_description">Fahrtbestwert über den Referenzen für Saison oder 42 Tage.</string>
-  <string name="power_best_short_recent">42 T.</string>
-  <string name="power_best_1">Power Best 1 s</string>
-  <string name="power_best_5">Power Best 5 s</string>
-  <string name="power_best_60">Power Best 1 min</string>
-  <string name="power_best_300">Power Best 5 min</string>
-  <string name="power_best_1200">Power Best 20 min</string>
+  <string name="power_best_short_recent">42</string>
+  <string name="power_best_short_season">S</string>
+  <string name="power_best_durations">Leistungsdauern</string>
+  <string name="power_best_durations_detail">Wähle die Dauern für Power Best Automatisch und Tabelle. S steht für Saison, 42 für die letzten 42 Tage.</string>
+  <string name="power_best_choose_durations">Dauern auswählen</string>
+  <string name="power_best_apply_durations">Übernehmen</string>
 </resources>

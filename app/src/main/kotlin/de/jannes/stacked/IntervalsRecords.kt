@@ -73,7 +73,10 @@ internal class IntervalsRecords(context: Context) {
     suspend fun sync(force: Boolean = false, periods: List<String> = this.periods) = withContext(Dispatchers.IO) {
         mutex.withLock {
             val now = System.currentTimeMillis()
-            val due = periods.filter { force || now - syncedAt(it) !in 0 until DAY_MS }
+            val due = periods.filter {
+                force || prefs.getInt("intervals_cache_${it}_max_duration", 0) != powerDurations.last() ||
+                    now - syncedAt(it) !in 0 until DAY_MS
+            }
             if (due.isEmpty()) return@withLock
             val apiKey = readApiKey() ?: return@withLock
             for (period in due) {
@@ -96,7 +99,8 @@ internal class IntervalsRecords(context: Context) {
         (powerDurations + HEART_RECORD).forEach { duration ->
             editor.putInt("intervals_cache_${period}_$duration", values[duration] ?: 0)
         }
-        editor.putLong("intervals_cache_${period}_at", now).apply()
+        editor.putInt("intervals_cache_${period}_max_duration", powerDurations.last())
+            .putLong("intervals_cache_${period}_at", now).apply()
     }
 
     private fun request(path: String, apiKey: String): JSONObject {

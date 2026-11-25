@@ -39,7 +39,7 @@ class StackedExtension : KarooExtension("stacked-fields", BuildConfig.VERSION_NA
     private val recordMonitor by lazy { RideRecordMonitor(this, system) }
     override val types: List<DataTypeImpl> by lazy { stacks.map { StackedType(system, it, recordMonitor) } +
             BestComparisonType(recordMonitor) +
-            (listOf(null) + powerDurations).map { PowerBestType(recordMonitor, it) } }
+            PowerBestType(recordMonitor) }
 
     override fun onCreate() {
         super.onCreate()
@@ -231,9 +231,9 @@ private class StackedType(
                         config.textSize, recordValue, stack.unit)
                     view.setViewVisibility(R.id.zone, android.view.View.GONE)
                     view.setViewVisibility(R.id.right, android.view.View.GONE)
-                    val message = when (record.duration) {
-                        HEART_RECORD -> context.getString(R.string.record_heart_notice)
-                        1, 5 -> context.getString(R.string.record_seconds_notice, record.duration)
+                    val message = when {
+                        record.duration == HEART_RECORD -> context.getString(R.string.record_heart_notice)
+                        record.duration < 60 -> context.getString(R.string.record_seconds_notice, record.duration)
                         else -> context.getString(R.string.record_minutes_notice, record.duration / 60)
                     }
                     view.setTextViewText(R.id.left, message)

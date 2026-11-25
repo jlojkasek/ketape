@@ -101,11 +101,12 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         }
 
     private fun checkRecords(values: List<RideBest>) {
+        val selected = selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))
         for (best in values) {
             if (best.duration == HEART_RECORD && !prefs.getBoolean(RECORD_HEART, false)) continue
             if (best.value <= (rideBests[best.duration] ?: -1)) continue
             rideBests = rideBests + (best.duration to best.value)
-            if (!records.connected) continue
+            if (!records.connected || (best.duration != HEART_RECORD && best.duration !in selected)) continue
             val beatenPeriods = periods.filter { period ->
                 val reference = records.reference(period, best.duration)
                 reference != null && best.value > maxOf(reference, records.recentBest(period, best.duration))

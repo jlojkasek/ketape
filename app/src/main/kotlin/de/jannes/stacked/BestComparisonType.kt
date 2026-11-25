@@ -52,10 +52,12 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                     Configuration.UI_MODE_NIGHT_YES)
                 val foreground = if (dark) Color.WHITE else Color.rgb(17, 17, 17)
                 val background = if (dark) Color.BLACK else Color.WHITE
-                val durations = powerDurations
+                val durations = selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))
                 val periods = monitor.comparisonPeriods()
                 val page = (SystemClock.elapsedRealtime() - started) / if (config.preview) 2200L else 4000L
-                val visible = if (fullPage) durations else comparisonPage(durations, rowCapacity, page)
+                val bodyHeight = (config.viewSize.second - (28 + 2 * padding) * density).coerceAtLeast(1f)
+                val capacity = if (fullPage) (bodyHeight / (24 * density)).toInt().coerceAtLeast(1) else rowCapacity
+                val visible = comparisonPage(durations, capacity, page)
                 val ride = if (config.preview) PreviewValues.previewRide else monitor.rideBestSnapshot()
                 val view = RemoteViews(context.packageName, R.layout.best_comparison)
                 view.setImageViewResource(R.id.field_background, if (config.boundariesEnabled)
@@ -66,13 +68,10 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                 if (fullPage) {
                     val inset = (padding * density).toInt()
                     view.setViewPadding(R.id.comparison_content, inset, inset, inset, inset)
-                    view.setViewVisibility(R.id.comparison_title, View.VISIBLE)
                     view.setViewVisibility(R.id.comparison_header, View.VISIBLE)
-                    view.setTextViewText(R.id.comparison_title, context.getString(R.string.power_best_table))
-                    view.setTextColor(R.id.comparison_title, foreground)
                 }
                 val rowHeight = if (fullPage) {
-                    (config.viewSize.second - (70 + 2 * padding) * density).coerceAtLeast(1f) / durations.size
+                    bodyHeight / minOf(capacity, durations.size)
                 } else height / (minOf(rowCapacity, durations.size) + if (showHeader) 1 else 0)
                 val muted = if (dark) Color.rgb(178, 189, 200) else Color.rgb(67, 80, 93)
                 val stripe = if (dark) Color.rgb(24, 32, 40) else Color.rgb(235, 240, 245)
@@ -122,10 +121,8 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                     R.string.comparison_power_unit else R.string.comparison_best),
                     context.getString(R.string.comparison_ride), referenceTitles, header = true)
                 for ((index, duration) in visible.withIndex()) {
-                    val metric = when (duration) {
-                        1, 5 -> context.getString(R.string.records_seconds, duration)
-                        else -> context.getString(R.string.records_minutes, duration / 60)
-                    }
+                    val metric = if (duration < 60) context.getString(R.string.records_seconds, duration)
+                        else context.getString(R.string.records_minutes, duration / 60)
                     fun valueText(value: Int?) = when {
                         value == null -> "–"
                         fullPage -> value.toString()

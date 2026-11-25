@@ -22,6 +22,15 @@ class RideBestValuesTest {
         assertTrue(RideBest(1200, 1200) in recorder.sample(1201, 2400.0, null))
     }
 
+    @Test fun hourlyBestRequiresAFullWindowAndRollsForward() {
+        val recorder = RideBestValues()
+        for (second in 0L..3598L) {
+            assertFalse(recorder.sample(second, 3600.0, null).any { it.duration == 3600 })
+        }
+        assertTrue(RideBest(3600, 3600) in recorder.sample(3599, 3600.0, null))
+        assertTrue(RideBest(3600, 3599) in recorder.sample(3600, 0.0, null))
+    }
+
     @Test fun gapsAndPausesRequireFreshCompleteWindows() {
         val recorder = RideBestValues()
         for (second in 0L..3L) recorder.sample(second, 500.0, null)

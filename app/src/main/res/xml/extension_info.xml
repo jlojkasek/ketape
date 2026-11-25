@@ -8,9 +8,4 @@
   <DataType typeId="cadence" displayName="@string/field_6" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="best-comparison" displayName="@string/power_best_table" description="@string/best_comparison_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="power-best-auto" displayName="@string/power_best_auto" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
-  <DataType typeId="power-best-1" displayName="@string/power_best_1" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
-  <DataType typeId="power-best-5" displayName="@string/power_best_5" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
-  <DataType typeId="power-best-60" displayName="@string/power_best_60" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
-  <DataType typeId="power-best-300" displayName="@string/power_best_300" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
-  <DataType typeId="power-best-1200" displayName="@string/power_best_1200" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
 </ExtensionInfo>

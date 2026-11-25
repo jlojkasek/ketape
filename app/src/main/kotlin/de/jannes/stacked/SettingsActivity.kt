@@ -145,6 +145,12 @@ class SettingsActivity : Activity() {
                 setText(R.string.records_connect)
                 setOnClickListener { showApiKeyDialog() }
             }.also { addView(it) }
+            addView(label(R.string.power_best_durations, heading = true))
+            addView(label(R.string.power_best_durations_detail))
+            addView(Button(this@SettingsActivity).apply {
+                setText(R.string.power_best_choose_durations)
+                setOnClickListener { showPowerDurationDialog() }
+            })
             recordDetails = LinearLayout(this@SettingsActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(label(R.string.records_period, heading = true))
@@ -260,6 +266,30 @@ class SettingsActivity : Activity() {
         super.onDestroy()
     }
 
+    private fun showPowerDurationDialog() {
+        val selected = selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))
+        val checked = powerDurations.map { it in selected }.toBooleanArray()
+        val labels = powerDurations.map(::durationLabel).toTypedArray()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.power_best_durations)
+            .setMultiChoiceItems(labels, checked) { popup, position, enabled ->
+                checked[position] = enabled
+                (popup as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = checked.any { it }
+            }
+            .setNegativeButton(R.string.settings_cancel, null)
+            .setPositiveButton(R.string.power_best_apply_durations) { _, _ ->
+                prefs.edit().putStringSet(POWER_BEST_DURATIONS,
+                    powerDurations.filterIndexed { index, _ -> checked[index] }.map { it.toString() }.toSet()).apply()
+                updateRecordStatus()
+            }
+            .create()
+        dialog.show()
+    }
+
+    private fun durationLabel(duration: Int): String =
+        if (duration < 60) getString(R.string.records_seconds, duration)
+        else getString(R.string.records_minutes, duration / 60)
+
     private fun showApiKeyDialog() {
         val input = EditText(this).apply {
             setSingleLine(true)
@@ -360,11 +390,8 @@ class SettingsActivity : Activity() {
         }
         recordValues.removeAllViews()
         if (periods.none { records.syncedAt(it) > 0 }) return
-        for (duration in powerDurations) {
-            val title = when (duration) {
-                1, 5 -> getString(R.string.records_seconds, duration)
-                else -> getString(R.string.records_minutes, duration / 60)
-            }
+        for (duration in selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))) {
+            val title = durationLabel(duration)
             val valueText = periods.joinToString("\n") { period ->
                 val value = records.reference(period, duration)
                 val text = when {

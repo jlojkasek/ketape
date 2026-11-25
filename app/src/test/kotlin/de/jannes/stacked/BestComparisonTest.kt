@@ -12,7 +12,13 @@ import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class BestComparisonTest {
-    private val durations = powerDurations
+    private val durations = defaultPowerDurations
+
+    @Test fun selectedDurationsKeepTheirOrderAndFallBackToAll() {
+        assertEquals(listOf(5, 1200), selectedPowerDurations(setOf("1200", "invalid", "5")))
+        assertEquals(defaultPowerDurations, selectedPowerDurations(null))
+        assertEquals(defaultPowerDurations, selectedPowerDurations(emptySet()))
+    }
 
     @Test fun smallestFieldCyclesThroughEveryComparison() {
         assertEquals(durations, durations.indices.flatMap { comparisonPage(durations, 1, it.toLong()) })
@@ -30,7 +36,6 @@ class BestComparisonTest {
         for ((width, height, count) in listOf(Triple(80, 32, 1), Triple(480, 720, durations.size))) {
             val remote = RemoteViews(context.packageName, R.layout.best_comparison)
             if (count > 1) {
-                remote.setViewVisibility(R.id.comparison_title, View.VISIBLE)
                 remote.setViewVisibility(R.id.comparison_header, View.VISIBLE)
                 val header = RemoteViews(context.packageName, R.layout.best_comparison_row)
                 header.setViewVisibility(R.id.comparison_second_reference, View.VISIBLE)

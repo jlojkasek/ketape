@@ -13,10 +13,8 @@ import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.*
 
-internal class PowerBestType(
-    private val monitor: RideRecordMonitor,
-    private val fixedDuration: Int?
-) : DataTypeImpl("stacked-fields", "power-best-${fixedDuration ?: "auto"}") {
+internal class PowerBestType(private val monitor: RideRecordMonitor) :
+    DataTypeImpl("stacked-fields", "power-best-auto") {
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
@@ -37,7 +35,8 @@ internal class PowerBestType(
             while (isActive) {
                 val elapsed = SystemClock.elapsedRealtime() - started
                 val interval = if (config.preview) 2200L else 4000L
-                val duration = fixedDuration ?: powerDurations[((elapsed / interval) % powerDurations.size).toInt()]
+                val durations = selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))
+                val duration = durations[((elapsed / interval) % durations.size).toInt()]
                 val durationText = context.getString(
                     if (duration < 60) R.string.records_seconds else R.string.records_minutes,
                     if (duration < 60) duration else duration / 60
@@ -71,9 +70,13 @@ internal class PowerBestType(
                     val value = if (config.preview) {
                         (if (recent) PreviewValues.previewRecent else PreviewValues.previewReference)[duration]
                     } else records.reference(period, duration)
-                    val label = context.getString(if (recent) R.string.power_best_short_recent else R.string.records_season_short)
+                    val label = context.getString(if (recent) R.string.power_best_short_recent else R.string.power_best_short_season)
+                    val fullLabel = context.getString(if (recent) R.string.comparison_42_days else R.string.records_season_short)
                     val target = if (index == 0) R.id.left else R.id.right
                     view.setTextViewText(target, "$label ${value ?: "–"}")
+                    val reference = value?.let { context.getString(R.string.records_watts, it) } ?: "–"
+                    view.setContentDescription(target, context.getString(
+                        R.string.comparison_accessible_reference, fullLabel, reference))
                 }
                 view.setViewVisibility(R.id.right, if (periods.size == 2) View.VISIBLE else View.GONE)
                 emitter.updateView(view)

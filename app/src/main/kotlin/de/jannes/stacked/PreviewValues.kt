@@ -2,9 +2,9 @@ package de.jannes.stacked
 
 /** Deterministic editor-only examples. Each step lasts two render ticks. */
 internal object PreviewValues {
-    val previewRide = mapOf(1 to 961, 5 to 832, 60 to 435, 300 to 308, 1200 to 252)
-    val previewRecent = mapOf(1 to 995, 5 to 860, 60 to 453, 300 to 317, 1200 to 265)
-    val previewReference = mapOf(1 to 1058, 5 to 901, 60 to 477, 300 to 332, 1200 to 281)
+    val previewRide = powerDurations.zip(listOf(961, 832, 740, 685, 540, 435, 377, 342, 308, 285, 271, 252, 242, 231, 221)).toMap()
+    val previewRecent = previewRide.mapValues { (_, value) -> value + 12 }
+    val previewReference = previewRide.mapValues { (_, value) -> value + 25 }
 
     data class Frame(val main: Double, val average: Double, val secondary: Double, val balanceLeft: Double = 48.0)
     fun record(field: String, tick: Int): RideBest? {

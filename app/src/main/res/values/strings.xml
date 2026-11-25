@@ -77,10 +77,10 @@
   <string name="power_best_table">Power Best Table</string>
   <string name="power_best_auto">Power Best Auto</string>
   <string name="power_best_description">Ride best above its season or 42-day references.</string>
-  <string name="power_best_short_recent">42 d</string>
-  <string name="power_best_1">Power Best 1 s</string>
-  <string name="power_best_5">Power Best 5 s</string>
-  <string name="power_best_60">Power Best 1 min</string>
-  <string name="power_best_300">Power Best 5 min</string>
-  <string name="power_best_1200">Power Best 20 min</string>
+  <string name="power_best_short_recent">42</string>
+  <string name="power_best_short_season">S</string>
+  <string name="power_best_durations">Durations</string>
+  <string name="power_best_durations_detail">Choose the durations shown in Power Best Auto and Table. S is season, 42 is the last 42 days.</string>
+  <string name="power_best_choose_durations">Choose durations</string>
+  <string name="power_best_apply_durations">Apply</string>
 </resources>

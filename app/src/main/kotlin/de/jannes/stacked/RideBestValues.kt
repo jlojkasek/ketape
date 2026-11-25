@@ -2,7 +2,13 @@ package de.jannes.stacked
 
 import kotlin.math.roundToInt
 
-internal val powerDurations = listOf(1, 5, 60, 300, 1200)
+internal val powerDurations = listOf(1, 5, 10, 15, 30, 60, 120, 180, 300, 600, 900, 1200, 1800, 2700, 3600)
+internal val defaultPowerDurations = listOf(1, 5, 60, 300, 1200)
+internal const val POWER_BEST_DURATIONS = "power_best_durations"
+
+internal fun selectedPowerDurations(selection: Set<String>?): List<Int> =
+    powerDurations.filter { it.toString() in selection.orEmpty() }.ifEmpty { defaultPowerDurations }
+
 internal const val HEART_RECORD = 0
 internal const val RECORD_PERIOD = "record_period"
 internal const val RECORD_HEART = "record_heart"
