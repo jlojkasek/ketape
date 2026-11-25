@@ -21,7 +21,7 @@
   <string name="reserve_capacity_error">1 bis 100 kJ eingeben</string>
   <string name="reserve_syncing">Abgleich läuft…</string>
   <string name="reserve_synced">Leistungsparameter synchronisiert</string>
-  <string name="reserve_key_rejected">API-Schlüssel abgelehnt. In Palmarès neu verbinden.</string>
+  <string name="reserve_key_rejected">API-Schlüssel abgelehnt. Unter Allgemein neu verbinden.</string>
   <string name="reserve_http_error">Intervals.icu meldet HTTP %1$d. Gespeicherte Werte bleiben verfügbar.</string>
   <string name="reserve_sync_error">Abgleich fehlgeschlagen. Verbindung prüfen und erneut versuchen.</string>
   <string name="reserve_display">Anzeigeeinstellungen</string>
@@ -31,7 +31,7 @@
   <string name="reserve_low_threshold">Schwelle für niedrige Reserve</string>
   <string name="reserve_explanation">Réserve modelliert die verbleibende Arbeit über deiner Referenzleistung, nicht deine gesamte Ermüdung oder garantierte Leistung. Parameter bleiben während der Fahrt fest. Nach einem Neustart bedeutet ⚠ unsichere Kontinuität: Bis zu 15 Sekunden und frühere Diagrammpunkte können fehlen. Ohne aktuellen Zwischenstand startet das Modell voll.</string>
   <string name="reserve_sync_after_ride">Abgleich ist nach Fahrtende möglich.</string>
-  <string name="reserve_connect_first">Zuerst Intervals.icu in Palmarès verbinden.</string>
+  <string name="reserve_connect_first">Zuerst Intervals.icu unter Allgemein verbinden.</string>
   <string name="reserve_invalid_sport">Gültige Rad-FTP und W′ in Intervals.icu einstellen.</string>
   <string name="reserve_ready">Fahrt starten</string>
   <string name="reserve_configure">CP und W′ einstellen</string>

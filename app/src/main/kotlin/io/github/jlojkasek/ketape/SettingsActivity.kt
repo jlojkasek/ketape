@@ -35,6 +35,7 @@ class SettingsActivity : Activity() {
     private lateinit var recordStatus: TextView
     private lateinit var defaultRecordStatusColors: ColorStateList
     private lateinit var recordFeedback: TextView
+    private lateinit var referenceFeedback: TextView
     private lateinit var recordDetails: LinearLayout
     private lateinit var recordValues: LinearLayout
     private lateinit var recordDates: TextView
@@ -66,6 +67,32 @@ class SettingsActivity : Activity() {
         }
 
         val display = settingsPage {
+            addView(label(R.string.intervals_connection_title, heading = true))
+            addView(label(R.string.intervals_connection_detail))
+            recordStatus = TextView(this@SettingsActivity).apply {
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(8), 0, 0)
+            }.also {
+                defaultRecordStatusColors = it.textColors
+                addView(it)
+            }
+            recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
+            connectButton = Button(this@SettingsActivity).apply {
+                setText(R.string.records_connect)
+                setOnClickListener { showApiKeyDialog() }
+            }.also { addView(it) }
+            disconnectButton = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                setText(R.string.records_disconnect)
+                setOnClickListener {
+                    AlertDialog.Builder(this@SettingsActivity)
+                        .setMessage(R.string.records_disconnect_detail)
+                        .setNegativeButton(R.string.settings_cancel, null)
+                        .setPositiveButton(R.string.records_disconnect) { _, _ ->
+                            runRecordAction { records.disconnect() }
+                        }.show()
+                }
+            }.also { addView(it) }
+
             addView(label(R.string.stacked_fields_name, heading = true))
             addView(label(R.string.settings_theme, heading = true))
             addView(choices("theme", listOf(
@@ -145,18 +172,7 @@ class SettingsActivity : Activity() {
             addView(label(R.string.records_title, heading = true))
             addView(label(R.string.records_detail))
             addView(label(R.string.ride_continuity_help))
-            recordStatus = TextView(this@SettingsActivity).apply {
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(8), 0, 0)
-            }.also {
-                defaultRecordStatusColors = it.textColors
-                addView(it)
-            }
-            recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
-            connectButton = Button(this@SettingsActivity).apply {
-                setText(R.string.records_connect)
-                setOnClickListener { showApiKeyDialog() }
-            }.also { addView(it) }
+            referenceFeedback = TextView(this@SettingsActivity).also { addView(it) }
             addView(label(R.string.power_best_durations, heading = true))
             addView(label(R.string.power_best_durations_detail))
             addView(Button(this@SettingsActivity).apply {
@@ -187,17 +203,6 @@ class SettingsActivity : Activity() {
                         prefs.edit().putBoolean(RECORD_SOUND, enabled).apply()
                     }
                 })
-                disconnectButton = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
-                    setText(R.string.records_disconnect)
-                    setOnClickListener {
-                        AlertDialog.Builder(this@SettingsActivity)
-                            .setMessage(R.string.records_disconnect_detail)
-                            .setNegativeButton(R.string.settings_cancel, null)
-                            .setPositiveButton(R.string.records_disconnect) { _, _ ->
-                                runRecordAction { records.disconnect() }
-                            }.show()
-                    }
-                }.also { addView(it) }
             }.also { addView(it) }
 
         }
@@ -589,6 +594,7 @@ class SettingsActivity : Activity() {
         connectButton.isEnabled = !busy
         recordDetails.visibility = if (connected) View.VISIBLE else View.GONE
         syncButton.isEnabled = !busy
+        disconnectButton.visibility = if (connected) View.VISIBLE else View.GONE
         disconnectButton.isEnabled = !busy
         val showConnected = connected && message != R.string.records_key_rejected
         recordStatus.setTextColor(if (showConnected)
@@ -600,6 +606,8 @@ class SettingsActivity : Activity() {
         }
         recordFeedback.text = feedback ?: message?.let { getString(it) }.orEmpty()
         recordFeedback.visibility = if (recordFeedback.text.isEmpty()) View.GONE else View.VISIBLE
+        referenceFeedback.text = recordFeedback.text
+        referenceFeedback.visibility = recordFeedback.visibility
         recordDates.text = periods.joinToString("\n") { period ->
             val syncedAt = records.syncedAt(period)
             val detail = if (syncedAt == 0L) getString(R.string.records_pending) else Date(syncedAt).let {

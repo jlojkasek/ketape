@@ -26,6 +26,8 @@
   <string name="settings_setup">Edit a data page in your Karoo profile and select a field under kEtape.</string>
   <string name="settings_updates">Find updates in the app manager on your Karoo.</string>
   <string name="settings_version">Version %1$s</string>
+  <string name="intervals_connection_title">Intervals.icu connection</string>
+  <string name="intervals_connection_detail">Connect once to use benchmarks in Palmarès and cycling parameters in Réserve.</string>
   <string name="records_title">Intervals.icu best efforts</string>
   <string name="records_connect">Connect Intervals.icu</string>
   <string name="records_disconnect">Disconnect Intervals.icu</string>
@@ -66,7 +68,7 @@
   <string name="comparison_accessible_ride">Ride best %1$s</string>
   <string name="comparison_accessible_reference">%1$s reference %2$s</string>
   <string name="records_both">Both periods</string>
-  <string name="settings_tab_display">Display</string>
+  <string name="settings_tab_display">General</string>
   <string name="settings_tab_about">About</string>
   <string name="comparison_power_unit">Power (W)</string>
   <string name="power_best_table">Palmarès Table</string>
@@ -90,7 +92,7 @@
   <string name="cadence_description">Live cadence with ride stats or left/right power balance.</string>
   <string name="best_comparison_description">See your best power for each duration alongside your Intervals.icu benchmarks.</string>
   <string name="power_best_description">See your ride best and Intervals.icu benchmarks in a compact field that cycles through your chosen durations.</string>
-  <string name="records_detail">Compare your ride bests with your season, the last 42 days, or both. Connect Intervals.icu to get your benchmarks.</string>
+  <string name="records_detail">Compare your ride bests with your season, the last 42 days, or both.</string>
   <string name="stacked_fields_name">Stacked Fields</string>
   <string name="records_hide_api_key">Hide API key</string>
     <string name="reserve_balance">Réserve – Balance</string>

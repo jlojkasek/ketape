@@ -21,7 +21,7 @@
   <string name="reserve_capacity_error">Enter 1 to 100 kJ</string>
   <string name="reserve_syncing">Syncing…</string>
   <string name="reserve_synced">Power parameters synced</string>
-  <string name="reserve_key_rejected">API key rejected. Reconnect in Palmarès.</string>
+  <string name="reserve_key_rejected">API key rejected. Reconnect in General.</string>
   <string name="reserve_http_error">Intervals.icu returned HTTP %1$d. Stored values are still available.</string>
   <string name="reserve_sync_error">Could not sync. Check the connection and try again.</string>
   <string name="reserve_display">Display settings</string>
@@ -31,7 +31,7 @@
   <string name="reserve_low_threshold">Low reserve threshold</string>
   <string name="reserve_explanation">Réserve models remaining work above your reference power. It does not measure overall fatigue or guarantee performance. Parameters stay fixed during a ride. After a restart, ⚠ marks uncertain continuity: up to 15 seconds and all earlier graph points may be missing. Without a recent checkpoint, the model starts full.</string>
   <string name="reserve_sync_after_ride">Sync is available after the ride ends.</string>
-  <string name="reserve_connect_first">Connect Intervals.icu in Palmarès first.</string>
+  <string name="reserve_connect_first">Connect Intervals.icu in General first.</string>
   <string name="reserve_invalid_sport">Set a valid cycling FTP and W′ in Intervals.icu.</string>
   <string name="reserve_ready">Start a ride</string>
   <string name="reserve_configure">Set CP and W′</string>

@@ -22,7 +22,7 @@ Installiere Updates über die bestehende App, damit Einstellungen und Feldplatzi
 
 ## Intervals.icu und Offline-Nutzung
 
-Verbinde dein Konto in den Palmarès-Einstellungen mit einem persönlichen API-Schlüssel. Der Schlüssel wird verschlüsselt auf dem Karoo gespeichert. kEtape liest die benötigten Referenzwerte und Radparameter. Es schreibt keine Trainingsdaten zu Intervals.icu zurück.
+Verbinde dein Konto im Reiter „Allgemein“ mit einem persönlichen API-Schlüssel. Der Schlüssel wird verschlüsselt auf dem Karoo gespeichert. kEtape liest die benötigten Referenzwerte und Radparameter. Es schreibt keine Trainingsdaten zu Intervals.icu zurück.
 
 Bei vorhandener Internetverbindung aktualisiert kEtape fällige Palmarès-Referenzen im Leerlauf. Unterwegs stehen die zuletzt geladenen Werte auch offline zur Verfügung. Den letzten Abgleich siehst du in den Palmarès-Einstellungen.
 

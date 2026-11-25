@@ -26,6 +26,8 @@
   <string name="settings_setup">Bearbeite eine Datenseite in deinem Karoo-Profil und wähle unter kEtape das gewünschte Feld.</string>
   <string name="settings_updates">Updates findest du in der App-Verwaltung auf dem Karoo.</string>
   <string name="settings_version">Version %1$s</string>
+  <string name="intervals_connection_title">Intervals.icu-Verbindung</string>
+  <string name="intervals_connection_detail">Verbinde dein Konto einmal, um Bestwerte in Palmarès und Radparameter in Réserve zu nutzen.</string>
   <string name="records_title">Intervals.icu-Bestwerte</string>
   <string name="records_connect">Intervals.icu verbinden</string>
   <string name="records_disconnect">Intervals.icu trennen</string>
@@ -66,7 +68,7 @@
   <string name="comparison_accessible_ride">Fahrtbestwert %1$s</string>
   <string name="comparison_accessible_reference">Referenz %1$s %2$s</string>
   <string name="records_both">Beide Zeiträume</string>
-  <string name="settings_tab_display">Anzeige</string>
+  <string name="settings_tab_display">Allgemein</string>
   <string name="settings_tab_about">Info</string>
   <string name="comparison_power_unit">Leistung (W)</string>
   <string name="power_best_table">Palmarès Tabelle</string>
@@ -90,7 +92,7 @@
   <string name="cadence_description">Aktuelle Trittfrequenz mit Fahrtwerten oder Links-rechts-Leistungsbalance.</string>
   <string name="best_comparison_description">Vergleiche deine Fahrtbestwerte je Dauer direkt mit deinen Referenzwerten aus Intervals.icu.</string>
   <string name="power_best_description">Fahrtbestwert und Intervals.icu-Referenzen in einem kompakten Feld, das durch deine gewählten Dauern wechselt.</string>
-  <string name="records_detail">Vergleiche deine Fahrtbestwerte mit der Saison, den letzten 42 Tagen oder beiden Zeiträumen. Verbinde Intervals.icu, um deine Referenzwerte zu laden.</string>
+  <string name="records_detail">Vergleiche deine Fahrtbestwerte mit der Saison, den letzten 42 Tagen oder beiden Zeiträumen.</string>
   <string name="stacked_fields_name">Stacked Fields</string>
   <string name="records_hide_api_key">API-Schlüssel ausblenden</string>
   <string name="reserve_balance">Réserve – Balance</string>
