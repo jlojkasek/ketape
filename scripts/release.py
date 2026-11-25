@@ -117,7 +117,7 @@ def check_source(version):
     if refs.get(f'refs/tags/{tag}^{{}}', refs.get(f'refs/tags/{tag}')) != head:
         raise ValueError('Quellcommit und Tag müssen vor der Veröffentlichung auf origin gesichert sein.')
     runs = json.loads(run('gh', 'run', 'list', '--commit', head, '--workflow', 'build.yml',
-                         '--event', 'push', '--limit', '20', '--json', 'headSha,status,conclusion', capture=True))
+                         '--event', 'push', '--branch', 'main', '--limit', '20', '--json', 'headSha,status,conclusion', capture=True))
     matching = [item for item in runs if item['headSha'] == head]
     if not matching or matching[0]['status'] != 'completed' or matching[0]['conclusion'] != 'success':
         raise ValueError('Für diesen Quellcommit fehlt ein erfolgreicher aktueller CI-Lauf.')

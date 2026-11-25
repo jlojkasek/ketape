@@ -2,7 +2,7 @@
 
 1. Version und Versionscode in `app/build.gradle.kts` erhöhen. Unter `releases/<Version>.md` kurz beschreiben, was sich für Karoo-Nutzer ändert.
 2. Den signierten Build mit `python3 scripts/release.py --prepare-only --test-on-karoo` auf dem Karoo prüfen.
-3. Den Commit und seinen Versionstag pushen und die GitHub-Checks abwarten.
+3. Den Commit auf `main` pushen und den erfolgreichen GitHub-Check für diesen Commit abwarten. Anschließend den Versionstag auf denselben Commit setzen und pushen.
 4. Einmal mit `python3 scripts/release.py --publish` veröffentlichen.
 
 Das Skript baut und signiert lokal, lädt die Dateien als Entwurf in `jlojkasek/ketape` und prüft anschließend den öffentlichen Download. Den vorhandenen Signierschlüssel ausschließlich lokal und in einer unabhängigen geschützten Sicherung aufbewahren.
