@@ -2,6 +2,10 @@ package de.jannes.stacked
 
 /** Deterministic editor-only examples. Each step lasts two render ticks. */
 internal object PreviewValues {
+    val previewRide = mapOf(1 to 961, 5 to 832, 60 to 435, 300 to 308, 1200 to 252)
+    val previewRecent = mapOf(1 to 995, 5 to 860, 60 to 453, 300 to 317, 1200 to 265)
+    val previewReference = mapOf(1 to 1058, 5 to 901, 60 to 477, 300 to 332, 1200 to 281)
+
     data class Frame(val main: Double, val average: Double, val secondary: Double, val balanceLeft: Double = 48.0)
     fun record(field: String, tick: Int): RideBest? {
         // Keep the editor responsive by showing the sample for two render ticks.

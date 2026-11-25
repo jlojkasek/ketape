@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/comparison_row"
     android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="1"
@@ -17,12 +18,12 @@
     <TextView
         android:id="@+id/comparison_reference"
         style="@style/ComparisonCell"
-        android:gravity="center_vertical|end"
+        android:gravity="center"
         android:layout_weight="1.25" />
     <TextView
         android:id="@+id/comparison_second_reference"
         style="@style/ComparisonCell"
-        android:gravity="center_vertical|end"
+        android:gravity="center"
         android:layout_weight="1.25"
         android:visibility="gone" />
 </LinearLayout>

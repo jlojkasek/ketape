@@ -12,7 +12,7 @@ import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class BestComparisonTest {
-    private val durations = powerDurations + HEART_RECORD
+    private val durations = powerDurations
 
     @Test fun smallestFieldCyclesThroughEveryComparison() {
         assertEquals(durations, durations.indices.flatMap { comparisonPage(durations, 1, it.toLong()) })
@@ -29,6 +29,13 @@ class BestComparisonTest {
         val context = RuntimeEnvironment.getApplication()
         for ((width, height, count) in listOf(Triple(80, 32, 1), Triple(480, 720, durations.size))) {
             val remote = RemoteViews(context.packageName, R.layout.best_comparison)
+            if (count > 1) {
+                remote.setViewVisibility(R.id.comparison_title, View.VISIBLE)
+                remote.setViewVisibility(R.id.comparison_header, View.VISIBLE)
+                val header = RemoteViews(context.packageName, R.layout.best_comparison_row)
+                header.setViewVisibility(R.id.comparison_second_reference, View.VISIBLE)
+                remote.addView(R.id.comparison_header, header)
+            }
             repeat(count) {
                 val row = RemoteViews(context.packageName, R.layout.best_comparison_row)
                 row.setViewVisibility(R.id.comparison_second_reference, View.VISIBLE)
@@ -40,6 +47,12 @@ class BestComparisonTest {
             view.layout(0, 0, width, height)
             val rows = view.findViewById<LinearLayout>(R.id.comparison_rows)
             assertEquals(count, rows.childCount)
+            if (count > 1) {
+                val header = view.findViewById<LinearLayout>(R.id.comparison_header)
+                assertTrue(header.height > 0)
+                assertEquals(header.bottom, rows.top)
+                assertEquals(rows.getChildAt(0).width, header.getChildAt(0).width)
+            }
             for (index in 0 until count) {
                 val row = rows.getChildAt(index) as LinearLayout
                 assertTrue(row.height > 0)

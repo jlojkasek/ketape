@@ -117,6 +117,17 @@ class SettingsActivity : Activity() {
             })
             addView(label(R.string.settings_balance_detail))
             addView(warningSettings)
+
+            addView(label(R.string.field_3, heading = true))
+            addView(Switch(this@SettingsActivity).apply {
+                setText(R.string.records_heart)
+                minHeight = dp(48)
+                isChecked = prefs.getBoolean(RECORD_HEART, false)
+                setOnCheckedChangeListener { _, enabled ->
+                    prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
+                    if (enabled) syncRecords(force = true)
+                }
+            })
         }
 
         val powerBest = settingsPage {
@@ -150,15 +161,6 @@ class SettingsActivity : Activity() {
                     setText(R.string.records_sync)
                     setOnClickListener { syncRecords(force = true) }
                 }.also { addView(it) }
-                addView(Switch(this@SettingsActivity).apply {
-                    setText(R.string.records_heart)
-                    minHeight = dp(48)
-                    isChecked = prefs.getBoolean(RECORD_HEART, false)
-                    setOnCheckedChangeListener { _, enabled ->
-                        prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
-                        if (enabled) syncRecords(force = true) else updateRecordStatus()
-                    }
-                })
                 addView(Switch(this@SettingsActivity).apply {
                     setText(R.string.records_sound)
                     minHeight = dp(48)
@@ -358,10 +360,8 @@ class SettingsActivity : Activity() {
         }
         recordValues.removeAllViews()
         if (periods.none { records.syncedAt(it) > 0 }) return
-        val durations = if (prefs.getBoolean(RECORD_HEART, false)) powerDurations + HEART_RECORD else powerDurations
-        for (duration in durations) {
+        for (duration in powerDurations) {
             val title = when (duration) {
-                HEART_RECORD -> getString(R.string.records_max_heart)
                 1, 5 -> getString(R.string.records_seconds, duration)
                 else -> getString(R.string.records_minutes, duration / 60)
             }
@@ -369,7 +369,6 @@ class SettingsActivity : Activity() {
                 val value = records.reference(period, duration)
                 val text = when {
                     value == null -> getString(R.string.records_no_value)
-                    duration == HEART_RECORD -> getString(R.string.records_bpm, value)
                     else -> getString(R.string.records_watts, value)
                 }
                 if (periods.size > 1) "${periodTitle(period)} · $text" else text

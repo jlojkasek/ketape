@@ -9,12 +9,34 @@
         android:scaleType="fitXY"
         android:src="@color/background" />
     <LinearLayout
-        android:id="@+id/comparison_rows"
+        android:id="@+id/comparison_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingStart="3dp"
         android:paddingEnd="3dp"
         android:paddingTop="2dp"
-        android:paddingBottom="2dp" />
+        android:paddingBottom="2dp">
+        <TextView
+            android:id="@+id/comparison_title"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:gravity="center_vertical"
+            android:singleLine="true"
+            android:textStyle="bold"
+            android:textSize="21sp"
+            android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/comparison_header"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/comparison_rows"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical" />
+    </LinearLayout>
 </FrameLayout>
