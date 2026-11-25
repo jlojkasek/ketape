@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
 
@@ -35,11 +36,10 @@ def environment():
         sdk = match[1] if match else None
     if not sdk:
         raise ValueError('Android SDK fehlt. Projekt zuerst in Android Studio synchronisieren.')
-    versions = [p for p in (Path(sdk) / 'build-tools').iterdir()
-                if (p / 'apksigner').exists() and (p / 'aapt').exists()]
-    if not versions:
-        raise ValueError('Android Build Tools fehlen.')
-    return sorted(versions, key=lambda p: tuple(int(n) for n in re.findall(r'\d+', p.name)))[-1]
+    tools = Path(sdk) / 'build-tools' / '35.0.0'
+    if not (tools / 'apksigner').exists() or not (tools / 'aapt').exists():
+        raise ValueError('Android Build Tools 35.0.0 fehlen. Mit sdkmanager installieren.')
+    return tools
 
 
 def inspect_apk(apk, tools):
@@ -56,10 +56,13 @@ def inspect_apk(apk, tools):
 
 def manifest(version, code, notes):
     repo = CHANNEL['repository']
-    return dict(label='Stacked Fields', packageName=CHANNEL['packageName'],
-                latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/karoo-stacked-fields-{version}.apk',
+    return dict(label='kEtape', packageName=CHANNEL['packageName'],
+                latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/ketape-{version}.apk',
                 latestVersion=version, latestVersionCode=code, developer='Jannes Lojkasek',
-                description='Kompakte Datenfelder für Leistung, Herzfrequenz, Geschwindigkeit, Strecke und Trittfrequenz.',
+                description=(
+                    'Bessere Fahrdaten für deinen Karoo. Passe deine Stacked Fields an, '
+                    'vergleiche mit Palmarès deine Leistungsbestwerte und verfolge mit Réserve deine W′-Reserve.'
+                ),
                 releaseNotes=notes)
 
 
@@ -75,7 +78,7 @@ def prepare(apk, tools):
     notes = (ROOT / f'releases/{version}.md').read_text().strip()
     folder = ROOT / 'dist' / f'v{version}'
     folder.mkdir(parents=True, exist_ok=True)
-    target = folder / f'karoo-stacked-fields-{version}.apk'
+    target = folder / f'ketape-{version}.apk'
     shutil.copy2(apk, target)
     document = manifest(version, code, notes)
     source = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml')
@@ -85,10 +88,91 @@ def prepare(apk, tools):
     if urls != [expected_url]:
         raise ValueError('Update-Adresse und Veröffentlichungskanal passen nicht zusammen.')
     (folder / 'manifest.json').write_text(json.dumps(document, indent=2, ensure_ascii=False)+'\n')
-    assets = [target, folder / 'manifest.json']
+    info = {
+        'sourceCommit': run('git', 'rev-parse', 'HEAD', capture=True).strip(),
+        'sourceDirty': bool(run('git', 'status', '--porcelain', '--untracked-files=all', capture=True).strip()),
+        'version': version, 'versionCode': code,
+        'apkSha256': hashlib.sha256(target.read_bytes()).hexdigest(),
+        'gradle': '8.9', 'androidGradlePlugin': '8.7.3', 'kotlin': '2.0.21',
+        'androidBuildTools': tools.name,
+        'java': run(Path(os.environ['JAVA_HOME']) / 'bin/java' if os.environ.get('JAVA_HOME') else 'java',
+                    '--version', capture=True).splitlines()[0],
+    }
+    (folder / 'build-info.json').write_text(json.dumps(info, indent=2)+'\n')
+    assets = [target, folder / 'manifest.json', folder / 'build-info.json']
     checksums = ''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets)
     (folder / 'SHA256SUMS').write_text(checksums)
     return version, code, folder, assets + [folder / 'SHA256SUMS']
+
+
+def check_source(version):
+    if run('git', 'status', '--porcelain', '--untracked-files=all', capture=True).strip():
+        raise ValueError('Release-Änderungen zuerst committen. Das Arbeitsverzeichnis muss sauber sein.')
+    head = run('git', 'rev-parse', 'HEAD', capture=True).strip()
+    tag = f'v{version}'
+    if tag not in run('git', 'tag', '--points-at', 'HEAD', capture=True).splitlines():
+        raise ValueError(f'Der aktuelle Commit braucht den Tag {tag}.')
+    remote = run('git', 'ls-remote', 'origin', f'refs/tags/{tag}', f'refs/tags/{tag}^{{}}', capture=True)
+    refs = dict(line.split()[::-1] for line in remote.splitlines())
+    if refs.get(f'refs/tags/{tag}^{{}}', refs.get(f'refs/tags/{tag}')) != head:
+        raise ValueError('Quellcommit und Tag müssen vor der Veröffentlichung auf origin gesichert sein.')
+    runs = json.loads(run('gh', 'run', 'list', '--commit', head, '--workflow', 'build.yml',
+                         '--event', 'push', '--limit', '20', '--json', 'headSha,status,conclusion', capture=True))
+    matching = [item for item in runs if item['headSha'] == head]
+    if not matching or matching[0]['status'] != 'completed' or matching[0]['conclusion'] != 'success':
+        raise ValueError('Für diesen Quellcommit fehlt ein erfolgreicher aktueller CI-Lauf.')
+    return head
+
+
+def public_bytes(url):
+    with urllib.request.urlopen(url, timeout=60) as response:
+        return response.read()
+
+
+def verify_public(version, tools, expected_assets=None, require_latest=False):
+    if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        raise ValueError('Ungültige Release-Version.')
+    base = f"https://github.com/{CHANNEL['repository']}/releases/download/v{version}/"
+    raw = public_bytes(base + 'manifest.json')
+    document = json.loads(raw)
+    apk_name = f'ketape-{version}.apk'
+    if document.get('packageName') != CHANNEL['packageName'] or document.get('latestVersion') != version:
+        raise ValueError('Öffentliches Manifest hat falsches Paket oder falsche Version.')
+    if document.get('latestApkUrl') != base + apk_name:
+        raise ValueError('Öffentliches Manifest verweist nicht auf das erwartete APK.')
+    checksums = {}
+    for line in public_bytes(base + 'SHA256SUMS').decode().splitlines():
+        digest, name = line.split()
+        if name in checksums or not re.fullmatch('[0-9a-f]{64}', digest):
+            raise ValueError('Ungültige Prüfsummenliste.')
+        if name not in {apk_name, 'manifest.json', 'build-info.json'}:
+            raise ValueError('Unerwartete Datei in Prüfsummenliste.')
+        checksums[name] = digest
+    if not {apk_name, 'manifest.json'} <= checksums.keys():
+        raise ValueError('Unvollständige Prüfsummenliste.')
+    payloads = {name: raw if name == 'manifest.json' else public_bytes(base + name) for name in checksums}
+    for name, data in payloads.items():
+        if hashlib.sha256(data).hexdigest() != checksums[name]:
+            raise ValueError(f'Öffentliche Prüfsumme stimmt nicht: {name}')
+    if expected_assets:
+        for asset in expected_assets:
+            actual = payloads.get(asset.name) if asset.name != 'SHA256SUMS' else public_bytes(base + asset.name)
+            if actual != asset.read_bytes():
+                raise ValueError(f'Öffentliche Datei stimmt nicht mit lokalem Release überein: {asset.name}')
+    with tempfile.TemporaryDirectory(prefix='ketape-verify-') as folder:
+        apk = Path(folder) / apk_name
+        apk.write_bytes(payloads[apk_name])
+        if inspect_apk(apk, tools) != (version, document['latestVersionCode']):
+            raise ValueError('APK-Version und Manifest stimmen nicht überein.')
+    if require_latest:
+        latest = json.loads(public_bytes(f"https://github.com/{CHANNEL['repository']}/releases/latest/download/manifest.json"))
+        if latest != document:
+            raise ValueError('Der Latest-Kanal verweist nicht auf diesen Release.')
+    print(f'Release {version}: öffentliche Dateien, Prüfsummen, Paket und Signatur geprüft.')
+
+
+class PublishedVerificationError(ValueError):
+    pass
 
 
 def publish(version, code, assets, setup):
@@ -103,7 +187,7 @@ def publish(version, code, assets, setup):
         if not setup:
             raise ValueError('Download-Repository fehlt. Einmal mit --setup veröffentlichen.')
         run('gh', 'repo', 'create', repo, '--public', '--add-readme', '--description',
-            'APK downloads and update manifest for Karoo Stacked Fields. Source code is maintained separately.')
+            'Custom ride data fields and live Intervals.icu best-effort comparisons for Hammerhead Karoo.')
     elif info['private']:
         raise ValueError('Download-Repository ist privat. Es wird nicht automatisch öffentlich gemacht.')
     releases = json.loads(run('gh', 'api', '--paginate', '--slurp',
@@ -121,53 +205,64 @@ def publish(version, code, assets, setup):
             raise ValueError('versionCode muss höher als im bisherigen Update sein.')
     if not existing:
         run('gh', 'release', 'create', tag, '--repo', repo, '--draft', '--title',
-            f'Karoo Stacked Fields {version}', '--notes-file', ROOT / f'releases/{version}.md')
+            f'kEtape {version}', '--notes-file', ROOT / f'releases/{version}.md')
     run('gh', 'release', 'upload', tag, *assets, '--repo', repo, '--clobber')
+    # Read the uploaded draft assets back before switching the public channel.
+    for asset in assets:
+        with tempfile.TemporaryDirectory(prefix='ketape-draft-') as folder:
+            downloaded = Path(folder) / asset.name
+            run('gh', 'release', 'download', tag, '--repo', repo, '--pattern', asset.name,
+                '--output', downloaded)
+            if downloaded.read_bytes() != asset.read_bytes():
+                raise ValueError(f'Entwurfsdatei stimmt nicht: {asset.name}')
     run('gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest')
-    # Prove that the device can fetch both files without GitHub credentials.
-    url = f'https://github.com/{repo}/releases/latest/download/manifest.json'
-    with urllib.request.urlopen(url, timeout=60) as response:
-        published = json.load(response)
-    if published != json.loads(assets[1].read_text()):
-        raise ValueError('Öffentliches Manifest stimmt nicht mit dem Release überein.')
-    with urllib.request.urlopen(published['latestApkUrl'], timeout=60) as response:
-        digest = hashlib.sha256()
-        for chunk in iter(lambda: response.read(1024*1024), b''):
-            digest.update(chunk)
-    if digest.hexdigest() != hashlib.sha256(assets[0].read_bytes()).hexdigest():
-        raise ValueError('Öffentlicher APK-Download stimmt nicht mit dem Release überein.')
-    print(f'Update öffentlich geprüft: {url}')
+    try:
+        verify_public(version, environment(), assets, require_latest=True)
+    except Exception as error:
+        raise PublishedVerificationError(
+            f'Release {version} IST veröffentlicht; die Nachprüfung ist fehlgeschlagen. '
+            f'Nicht erneut veröffentlichen. Prüfen mit: python3 scripts/release.py --verify-only {version}'
+        ) from error
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--prepare-only', action='store_true', help='Nur lokale Release-Dateien erzeugen')
-    parser.add_argument('--test-on-karoo', action='store_true', help='Die Release-APK vor der Veröffentlichung per ADB testen')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--prepare-only', action='store_true', help='Lokale Release-Dateien erzeugen (Standard)')
+    mode.add_argument('--publish', action='store_true', help='Geprüften Quellstand bauen und veröffentlichen')
+    mode.add_argument('--verify-only', metavar='VERSION', help='Öffentlichen Release ohne Build und Änderungen prüfen')
+    parser.add_argument('--test-on-karoo', action='store_true', help='Release-APK per ADB testen')
     parser.add_argument('--setup', action='store_true', help='Fehlendes öffentliches Download-Repository anlegen')
     args = parser.parse_args()
-    if not args.prepare_only:
-        if run('git', 'status', '--porcelain', '--untracked-files=all', capture=True).strip():
-            raise ValueError('Release-Änderungen zuerst committen. Das Arbeitsverzeichnis muss sauber sein.')
-        version = re.search(r'versionName\s*=\s*"([^"]+)"', (ROOT / 'app/build.gradle.kts').read_text())[1]
-        tags = run('git', 'tag', '--points-at', 'HEAD', capture=True).splitlines()
-        if f'v{version}' not in tags:
-            raise ValueError(f'Der aktuelle Commit braucht den Tag v{version}.')
     tools = environment()
-    run(sys.executable, '-m', 'unittest', 'discover', '-s', 'scripts/tests')
-    run('./gradlew', ':app:testReleaseUnitTest', ':app:lintRelease', ':app:assembleRelease')
+    if args.verify_only:
+        if args.test_on_karoo or args.setup:
+            parser.error('--verify-only kann nicht mit Installation oder Einrichtung kombiniert werden.')
+        verify_public(args.verify_only, tools)
+        return
+    if args.setup and not args.publish:
+        parser.error('--setup benötigt --publish.')
+    version = re.search(r'versionName\s*=\s*"([^"]+)"', (ROOT / 'app/build.gradle.kts').read_text())[1]
+    head = check_source(version) if args.publish else None
+    run('sh', ROOT / 'scripts/build.sh')
+    if args.publish and check_source(version) != head:
+        raise ValueError('Quellstand hat sich während des Builds geändert.')
     version, code, folder, assets = prepare(ROOT / 'app/build/outputs/apk/release/app-release.apk', tools)
     print(f'Release {version} ({code}) vorbereitet: {folder}', flush=True)
     if args.test_on_karoo:
         run('sh', ROOT / 'scripts/install.sh', assets[0])
-        if not args.prepare_only and input('Karoo-Test bestanden? Zum Veröffentlichen „ja“ eingeben: ').strip().lower() != 'ja':
+        if args.publish and input('Karoo-Test bestanden? Zum Veröffentlichen „ja“ eingeben: ').strip().lower() != 'ja':
             return
-    if not args.prepare_only:
+    if args.publish:
         publish(version, code, assets, args.setup)
 
 
 if __name__ == '__main__':
     try:
         main()
+    except PublishedVerificationError as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(2)
     except (ValueError, OSError, EOFError, subprocess.CalledProcessError) as error:
         print(f'Release nicht abgeschlossen: {error}', file=sys.stderr)
         sys.exit(1)

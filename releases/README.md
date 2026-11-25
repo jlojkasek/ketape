@@ -1,22 +1,39 @@
-# Karoo-Release
+# Release-Ablauf
 
-Erhöhe `versionName` und `versionCode` in `app/build.gradle.kts` und schreibe die öffentlichen Versionshinweise in `releases/<versionName>.md`. Committe die Änderungen im privaten Quellrepo. Für Version 0.1.3 lautet der Ablauf danach:
+## Vorbereiten
+
+1. Version und steigenden Code in `app/build.gradle.kts` setzen, öffentliche Hinweise in `releases/<Version>.md` schreiben. Eine veröffentlichte Version niemals wiederverwenden.
+2. `scripts/build.sh` ausführen.
+3. `python3 scripts/release.py --prepare-only --test-on-karoo` baut und installiert das signierte APK. Die [Gerätecheckliste](DEVICE-CHECKLIST.md) abarbeiten. Ohne Gerät kann mit `--prepare-only` nur lokal vorbereitet werden.
+4. Änderungen reviewen, vollständig committen und den Versionstag auf denselben Commit setzen. Commit und Tag im privaten Quellrepo sichern. Keine Schlüssel oder `.signing/` hinzufügen.
+5. Den GitHub-Workflow für diesen Commit abwarten. Das Skript prüft den neuesten passenden Push-Lauf; ein älterer Erfolg überstimmt keinen aktuellen Fehler.
+
+## Veröffentlichen
 
 ```sh
-git tag v0.1.3
-python3 scripts/release.py
+python3 scripts/release.py --publish --test-on-karoo
 ```
 
-Das Skript führt Python- und Android-Unit-Tests sowie Lint aus, baut und signiert die Release-APK und prüft Paket, Version und Zertifikat. Es veröffentlicht APK, Update-Manifest, Prüfsummen und Versionshinweise über einen GitHub-Entwurf im öffentlichen Download-Repo und prüft Manifest und APK anschließend ohne Anmeldung. Eine bereits veröffentlichte Version kann nicht überschrieben werden. Sichere Commit und Tag zusätzlich im privaten Quellrepo.
+Das Skript prüft sauberes Git, Quelltag auf `origin`, CI, Paket, Version und das bestehende Zertifikat. Es baut beide Varianten, führt Python-/Android-Tests und Lint aus, erstellt APK, `manifest.json`, `build-info.json` und `SHA256SUMS`, lädt einen Entwurf hoch und liest dessen Dateien vor der Freigabe wieder zurück. Danach wird der Release auf `latest` geschaltet und ohne Anmeldung geprüft.
 
-Für einen Gerätetest vor der Freigabe starte denselben Befehl mit `--test-on-karoo` und schließe den Karoo per USB mit aktiviertem USB-Debugging an. Das Skript installiert die gerade gebaute APK und fragt danach nach Freigabe. Für einen rein lokalen Build nutze `--prepare-only`. Die Dateien liegen in `dist/v<versionName>/`.
+`--publish` ohne `--test-on-karoo` ist nur für einen bereits am identischen Quellstand abgeschlossenen Gerätetest gedacht. Ohne `--publish` erzeugt der Befehl ausschließlich lokale Dateien. `--setup` ist nur zusammen mit `--publish` für die erstmalige Einrichtung eines fehlenden öffentlichen Downloadrepos verfügbar.
 
-## Einmalige Einrichtung
+Bei einem Fehler **nach** der Freigabe sagt die Ausgabe ausdrücklich, dass der Release bereits veröffentlicht ist (Exitcode 2). Dann nur die Nachprüfung wiederholen:
 
-Benötigt werden Python 3, Git, Java und das Android SDK. Für die Veröffentlichung kommt die GitHub CLI mit einmaligem `gh auth login` dazu. Der Gradle-Wrapper liegt im Repo. Das öffentliche Download-Repo ist bereits eingerichtet.
+```sh
+python3 scripts/release.py --verify-only 1.1.1
+```
 
-Gradle verwendet für den Release-Build denselben lokalen Keystore wie für die bisherigen Debug-APKs. Die Release-APK ist nicht debuggable. Sichere den bestehenden Android-Debug-Keystore separat. Das Skript gleicht das Zertifikat mit dem von 0.1.2 ab, damit ein Build mit einem anderen lokalen Schlüssel nicht versehentlich veröffentlicht wird. Ein direkter Wechsel auf einen neuen Schlüssel würde eine Neuinstallation erfordern.
+Dieser Befehl baut, installiert und veröffentlicht nichts. Er prüft versioniertes Manifest, Prüfsummen, APK-Paket, Version und Signatur. Er funktioniert auch für ältere Releases ohne `build-info.json`. Die stabile `latest`-Adresse wird zusätzlich unmittelbar nach einer Veröffentlichung geprüft; eine ältere Version muss später nicht mehr `latest` sein.
 
-## Update auf dem Karoo
+## Schlüssel und Wiederherstellung
 
-Installationen ab 0.1.2 kennen das [Update-Manifest](https://github.com/jlojkasek/karoo-stacked-fields-releases/releases/latest/download/manifest.json). Ältere Installationen brauchen einmalig ein manuelles Update. Den vollständigen Updatepfad testest du auf einem Karoo, der noch die ältere Version installiert hat, sobald eine neuere Version öffentlich ist.
+Der bestehende Schlüssel liegt lokal unter `.signing/release.keystore`; die ursprüngliche Kopie wurde nicht gelöscht. Das öffentliche Zertifikat ist in `channel.json` festgelegt. Auf einem neuen Rechner exakt diesen Schlüssel aus einer unabhängigen sicheren Sicherung wiederherstellen, nicht einen neuen erzeugen. Lokale Dateirechte `700` für das Verzeichnis und `600` für die Datei verwenden.
+
+Ein Build ohne lokalen Release-Schlüssel verwendet eine Wegwerfsignatur und wird vom Release-Skript blockiert. Die Release-APK ist unabhängig davon nicht debuggable. Kein Schlüssel wird an GitHub übertragen.
+
+## Herkunft
+
+`build-info.json` nennt Quellcommit, Dirty-Status, APK-Hash und Toolversionen. Ein Dirty-Build ist zum lokalen Testen erlaubt, nicht zum Veröffentlichen. Die Datei ist ein Herkunftsprotokoll, keine kryptografische Build-Attestierung. Bitidentische Builds über verschiedene JDKs/Betriebssysteme werden nicht behauptet.
+
+Die ältere 1.1.0 hat keine vollständige belegte Quellzuordnung; siehe [Bestandsprotokoll](AUDIT-2026-11-25.md). Ab 1.1.1 soll die neue Quell-/CI-Prüfung diese Lücke verhindern.

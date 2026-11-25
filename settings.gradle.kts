@@ -2,11 +2,11 @@ pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal()
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google(); mavenCentral(); mavenLocal()
+        google(); mavenCentral()
 
     }
 }
-rootProject.name = "KarooStackedFields"
+rootProject.name = "kEtape"
 include(":app")
 
 include(":karoo-ext")

@@ -10,8 +10,10 @@ if ! java -version >/dev/null 2>&1; then
   echo 'Java fehlt. Projekt einmal in Android Studio synchronisieren oder JAVA_HOME auf JDK 17/21 setzen.' >&2
   exit 1
 fi
-if [ ! -f local.properties ] && [ -z "${ANDROID_HOME:-}" ]; then
+if [ ! -f local.properties ] && [ -z "${ANDROID_HOME:-}" ] && [ -z "${ANDROID_SDK_ROOT:-}" ]; then
   echo 'Android SDK fehlt: sdk.dir in local.properties oder ANDROID_HOME setzen.' >&2
   exit 1
 fi
-./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug
+python3 -m unittest discover -s scripts/tests
+./gradlew :app:testDebugUnitTest :app:assembleDebug :app:lintDebug \
+  :app:testReleaseUnitTest :app:assembleRelease :app:lintRelease "$@"

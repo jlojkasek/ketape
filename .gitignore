@@ -14,3 +14,5 @@ dist/
 *.keystore
 .env
 .env.*
+
+.signing/

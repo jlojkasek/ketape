@@ -1,0 +1,9 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <ImageView android:id="@+id/reserve_background" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:scaleType="fitXY" android:importantForAccessibility="no" />
+    <LinearLayout android:id="@+id/reserve_rows" android:layout_width="match_parent"
+        android:layout_height="match_parent" android:orientation="vertical" android:gravity="center_vertical"
+        android:paddingStart="6dp" android:paddingEnd="6dp"
+        android:paddingTop="2dp" android:paddingBottom="2dp" />
+</FrameLayout>

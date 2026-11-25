@@ -1,20 +1,32 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android {
-    namespace = "de.jannes.stacked"
+    namespace = "io.github.jlojkasek.ketape"
     compileSdk = 35
+    buildToolsVersion = "35.0.0"
     defaultConfig {
-        applicationId = "de.jannes.stacked"
+        applicationId = "io.github.jlojkasek.ketape"
         minSdk = 23
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.1.8"
+        versionCode = 13
+        versionName = "1.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { buildConfig = true }
+    signingConfigs {
+        create("ketape") {
+            // Preserve the published certificate; keep the key outside version control.
+            storeFile = rootProject.file(".signing/release.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     buildTypes {
         release {
-            // Preserve update compatibility with the APKs already installed on Karoo.
-            signingConfig = signingConfigs.getByName("debug")
+            // CI can test a disposable signature; release.py rejects it for distribution.
+            signingConfig = signingConfigs.getByName(
+                if (rootProject.file(".signing/release.keystore").exists()) "ketape" else "debug"
+            )
         }
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
