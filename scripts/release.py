@@ -54,8 +54,8 @@ def inspect_apk(apk, tools):
     return match[3], int(match[2])
 
 
-def manifest(version, code, notes):
-    repo = CHANNEL['repository']
+def manifest(version, code, notes, repository=None):
+    repo = repository or CHANNEL['repository']
     return dict(label='kEtape', packageName=CHANNEL['packageName'],
                 latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/ketape-{version}.apk',
                 latestVersion=version, latestVersionCode=code, developer='Jannes Lojkasek',
@@ -129,10 +129,11 @@ def public_bytes(url):
         return response.read()
 
 
-def verify_public(version, tools, expected_assets=None, require_latest=False):
+def verify_public(version, tools, expected_assets=None, require_latest=False, repository=None):
+    repo = repository or CHANNEL['repository']
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         raise ValueError('Ungültige Release-Version.')
-    base = f"https://github.com/{CHANNEL['repository']}/releases/download/v{version}/"
+    base = f"https://github.com/{repo}/releases/download/v{version}/"
     raw = public_bytes(base + 'manifest.json')
     document = json.loads(raw)
     apk_name = f'ketape-{version}.apk'
@@ -165,7 +166,7 @@ def verify_public(version, tools, expected_assets=None, require_latest=False):
         if inspect_apk(apk, tools) != (version, document['latestVersionCode']):
             raise ValueError('APK-Version und Manifest stimmen nicht überein.')
     if require_latest:
-        latest = json.loads(public_bytes(f"https://github.com/{CHANNEL['repository']}/releases/latest/download/manifest.json"))
+        latest = json.loads(public_bytes(f"https://github.com/{repo}/releases/latest/download/manifest.json"))
         if latest != document:
             raise ValueError('Der Latest-Kanal verweist nicht auf diesen Release.')
     print(f'Release {version}: öffentliche Dateien, Prüfsummen, Paket und Signatur geprüft.')
@@ -175,8 +176,8 @@ class PublishedVerificationError(ValueError):
     pass
 
 
-def publish(version, code, assets, setup):
-    repo = CHANNEL['repository']
+def publish(version, code, assets, setup, repository=None):
+    repo = repository or CHANNEL['repository']
     run('gh', 'auth', 'status')
     # Distinguish missing repositories from network/auth failures; never hide errors.
     owned = json.loads(run('gh', 'api', '--paginate', '--slurp',
@@ -197,15 +198,14 @@ def publish(version, code, assets, setup):
     existing = next((r for r in releases if r['tag_name'] == tag), None)
     if existing and not existing['draft']:
         raise ValueError('Diese Version ist bereits veröffentlicht und wird nicht überschrieben.')
-    latest = next((r for r in releases if not r['draft'] and not r['prerelease']), None)
-    if latest:
-        prior = json.loads(run('gh', 'release', 'download', latest['tag_name'], '--repo', repo,
-                               '--pattern', 'manifest.json', '--output', '-', capture=True))
-        if code <= prior['latestVersionCode']:
-            raise ValueError('versionCode muss höher als im bisherigen Update sein.')
+    check_version_codes(repo, code, releases)
+    compatibility = CHANNEL.get('compatibilityRepository')
+    if repository is None and compatibility:
+        check_version_codes(compatibility, code)
     if not existing:
+        extra = ['--verify-tag'] if repo == CHANNEL['repository'] and CHANNEL.get('compatibilityRepository') else []
         run('gh', 'release', 'create', tag, '--repo', repo, '--draft', '--title',
-            f'kEtape {version}', '--notes-file', ROOT / f'releases/{version}.md')
+            f'kEtape {version}', '--notes-file', ROOT / f'releases/{version}.md', *extra)
     run('gh', 'release', 'upload', tag, *assets, '--repo', repo, '--clobber')
     # Read the uploaded draft assets back before switching the public channel.
     for asset in assets:
@@ -217,12 +217,71 @@ def publish(version, code, assets, setup):
                 raise ValueError(f'Entwurfsdatei stimmt nicht: {asset.name}')
     run('gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest')
     try:
-        verify_public(version, environment(), assets, require_latest=True)
+        verify_public(version, environment(), assets, require_latest=True, repository=repo)
     except Exception as error:
         raise PublishedVerificationError(
             f'Release {version} IST veröffentlicht; die Nachprüfung ist fehlgeschlagen. '
             f'Nicht erneut veröffentlichen. Prüfen mit: python3 scripts/release.py --verify-only {version}'
+            + (' --compatibility' if repo == CHANNEL.get('compatibilityRepository') else '')
         ) from error
+
+
+def check_version_codes(repository, code, releases=None):
+    """Check every published stable release, not just GitHub's mutable latest pointer."""
+    if releases is None:
+        pages = json.loads(run('gh', 'api', '--paginate', '--slurp',
+                               f'repos/{repository}/releases?per_page=100', capture=True))
+        releases = [item for page in pages for item in page]
+    for item in releases:
+        if item['draft'] or item.get('prerelease', False):
+            continue
+        prior = json.loads(run('gh', 'release', 'download', item['tag_name'], '--repo', repository,
+                               '--pattern', 'manifest.json', '--output', '-', capture=True))
+        if prior.get('packageName') != CHANNEL['packageName']:
+            raise ValueError('Bestehender Kanal hat ein unerwartetes Paket.')
+        if type(prior.get('latestVersionCode')) is not int or code <= prior['latestVersionCode']:
+            raise ValueError('versionCode muss höher als in allen bisherigen Updates sein.')
+
+
+def compatibility_repository():
+    repo = CHANNEL.get('compatibilityRepository')
+    if not repo or repo == CHANNEL['repository']:
+        raise ValueError('Kein separater Kompatibilitätskanal konfiguriert.')
+    return repo
+
+
+def publish_compatibility(version, tools):
+    """Mirror verified primary bytes; never rebuild or replace a published release."""
+    repo = compatibility_repository()
+    head = check_source(version)
+    verify_public(version, tools)
+    base = f"https://github.com/{CHANNEL['repository']}/releases/download/v{version}/"
+    # A second read is checked against the first, verified release below.
+    with tempfile.TemporaryDirectory(prefix='ketape-bridge-') as folder:
+        folder = Path(folder)
+        names = [f'ketape-{version}.apk', 'manifest.json', 'build-info.json', 'SHA256SUMS']
+        assets = []
+        for name in names:
+            target = folder / name
+            target.write_bytes(public_bytes(base + name))
+            assets.append(target)
+        verify_public(version, tools, expected_assets=assets)
+        info = json.loads((folder / 'build-info.json').read_text())
+        document = json.loads((folder / 'manifest.json').read_text())
+        if info.get('sourceCommit') != head or info.get('sourceDirty') is not False:
+            raise ValueError('Primärrelease gehört nicht zum sauberen, geprüften Quellcommit.')
+        apk_version, code = inspect_apk(assets[0], tools)
+        if (apk_version, code) != (version, document['latestVersionCode']):
+            raise ValueError('Primärrelease hat eine inkonsistente Version.')
+        if info.get('apkSha256') != hashlib.sha256(assets[0].read_bytes()).hexdigest():
+            raise ValueError('Herkunftsprotokoll und APK stimmen nicht überein.')
+        document['latestApkUrl'] = f'https://github.com/{repo}/releases/download/v{version}/{names[0]}'
+        (folder / 'manifest.json').write_text(json.dumps(document, indent=2, ensure_ascii=False)+'\n')
+        (folder / 'SHA256SUMS').write_text(''.join(
+            f'{hashlib.sha256(asset.read_bytes()).hexdigest()}  {asset.name}\n' for asset in assets[:-1]))
+        if check_source(version) != head:
+            raise ValueError('Quellstand hat sich während der Vorbereitung geändert.')
+        publish(version, code, assets, False, repository=repo)
 
 
 def main():
@@ -230,15 +289,25 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--prepare-only', action='store_true', help='Lokale Release-Dateien erzeugen (Standard)')
     mode.add_argument('--publish', action='store_true', help='Geprüften Quellstand bauen und veröffentlichen')
+    mode.add_argument('--publish-compatibility', metavar='VERSION', help='Geprüften Primärrelease unverändert im alten Kanal anbieten')
     mode.add_argument('--verify-only', metavar='VERSION', help='Öffentlichen Release ohne Build und Änderungen prüfen')
     parser.add_argument('--test-on-karoo', action='store_true', help='Release-APK per ADB testen')
     parser.add_argument('--setup', action='store_true', help='Fehlendes öffentliches Download-Repository anlegen')
+    parser.add_argument('--compatibility', action='store_true', help='Mit --verify-only den alten Kanal prüfen')
     args = parser.parse_args()
+    if args.compatibility and not args.verify_only:
+        parser.error('--compatibility benötigt --verify-only.')
+    if args.publish_compatibility and (args.test_on_karoo or args.setup):
+        parser.error('--publish-compatibility kann nicht mit Installation oder Einrichtung kombiniert werden.')
     tools = environment()
+    if args.publish_compatibility:
+        publish_compatibility(args.publish_compatibility, tools)
+        return
     if args.verify_only:
         if args.test_on_karoo or args.setup:
             parser.error('--verify-only kann nicht mit Installation oder Einrichtung kombiniert werden.')
-        verify_public(args.verify_only, tools)
+        repo = compatibility_repository() if args.compatibility else None
+        verify_public(args.verify_only, tools, repository=repo)
         return
     if args.setup and not args.publish:
         parser.error('--setup benötigt --publish.')

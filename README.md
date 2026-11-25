@@ -12,13 +12,13 @@ Ultra ist noch nicht implementiert. Metrische Einheiten sind derzeit fest einges
 
 ## Installation und Updates
 
-Veröffentlichte APKs: [kEtape Downloads](https://github.com/jlojkasek/ketape-releases/releases).
+Ziel für neue Releases: [kEtape Downloads](https://github.com/jlojkasek/ketape/releases). Die Umstellung ist lokal vorbereitet, noch nicht veröffentlicht. Bisherige Versionen stehen weiterhin im [alten Downloadkanal](https://github.com/jlojkasek/ketape-releases/releases).
 
 Auf dem **neuesten Karoo** kann der direkte GitHub-APK-Link über die Hammerhead Companion App geteilt werden. Auf **Karoo 2** ist dieser Companion-Weg nicht verfügbar; dort per ADB installieren. Siehe [Hammerhead-Anleitung](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading).
 
 Unter kEtape die Einstellungen öffnen, anschließend Felder im Karoo-Fahrprofil hinzufügen. Die Editoransicht verwendet ausschließlich Beispieldaten. Ab 1.0.0 lautet das App-Paket `io.github.jlojkasek.ketape`; der Wechsel von Stacked Fields 0.x erfordert einmalig eine neue Installation, neue Feldplatzierungen und eine erneute Intervals-Verbindung. Updates innerhalb 1.x behalten Paket und Zertifikat bei.
 
-Das feste [Update-Manifest](https://github.com/jlojkasek/ketape-releases/releases/latest/download/manifest.json) verweist auf ein versioniertes APK. Eine Aufnahme in die offizielle Extension Library ist ein separater [Freigabeprozess bei Hammerhead/SRAM](https://support.hammerhead.io/hc/en-us/articles/53739708787099-Extensions-Self-Service-for-Developers).
+Der Kandidat 1.1.2 verwendet das neue [Update-Manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json). Diese Adresse wird erst nach der freigegebenen Veröffentlichung verfügbar. Der [bisherige Kanal](https://github.com/jlojkasek/ketape-releases/releases/latest/download/manifest.json) bleibt für installierte Versionen erhalten. Die Verteilung erfolgt ausschließlich über GitHub; keine Einreichung bei Awesome Karoo oder der offiziellen Extension Library ist vorgesehen.
 
 ## Terminal-first entwickeln
 
@@ -56,12 +56,12 @@ Ohne diesen Schlüssel baut CI mit einer eigenen Debug-Signatur auch die Release
 
 ```sh
 python3 scripts/release.py                 # nur lokal vorbereiten, kein Upload
-python3 scripts/release.py --verify-only 1.1.0  # öffentlichen Bestand nur lesen/prüfen
+python3 scripts/release.py --verify-only 1.1.0 --compatibility  # öffentlichen Bestand nur lesen/prüfen
 ```
 
 Veröffentlichen benötigt ausdrücklich `--publish`, einen sauberen Quellstand, einen auf `origin` gesicherten passenden Tag und einen erfolgreichen aktuellen CI-Lauf auf demselben Commit. APK, Manifest, Prüfsummen und `build-info.json` enthalten eine nachvollziehbare Zuordnung. Vollständiger Ablauf: [Release-Anleitung](releases/README.md).
 
-Die öffentliche 1.1.0 wird nicht überschrieben. Der Stabilisierungskandidat ist **1.1.1 (13)**. Die nicht abschließend rekonstruierte Herkunft des älteren APK ist im [Bestandsprotokoll](releases/AUDIT-2026-11-25.md) festgehalten.
+Die öffentliche 1.1.0 wird nicht überschrieben. Der lokal vorbereitete Migrationskandidat ist **1.1.2 (14)**; veröffentlicht ist weiterhin 1.1.1 (13). Die nicht abschließend rekonstruierte Herkunft des älteren APK ist im [Bestandsprotokoll](releases/AUDIT-2026-11-25.md) festgehalten.
 
 ## Daten, Modell und Kontinuität
 
