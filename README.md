@@ -1,6 +1,8 @@
 # kEtape
 
-Stacked Fields, Palmarès und Réserve für Hammerhead Karoo. Entwicklung und Veröffentlichung erfolgen lokal im Terminal. GitHub dient als Quellsicherung, unabhängige Prüfung und APK-Download; ein weiterer Hostingdienst ist nicht nötig.
+Anpassbare Datenfelder für Hammerhead Karoo: Fahrwerte kompakt anzeigen, Leistungsbestwerte mit Intervals.icu vergleichen und die W′-Reserve während der Fahrt verfolgen.
+
+**[Aktuelle APK herunterladen](https://github.com/jlojkasek/ketape/releases/latest)**
 
 ## Felder
 
@@ -8,17 +10,15 @@ Stacked Fields, Palmarès und Réserve für Hammerhead Karoo. Entwicklung und Ve
 - **Palmarès:** Fahrtbestwerte von 1 Sekunde bis 60 Minuten, als wechselndes Kompaktfeld oder Tabelle. Intervals.icu liefert Saison- und/oder 42-Tage-Referenzen. `*` bedeutet: Werte nur seit Neustart der Erweiterung, frühere Leistungen fehlen. `†` kennzeichnet Referenzen älter als 48 Stunden. Der Zeitstempel und der manuelle Abgleich stehen in den Einstellungen.
 - **Réserve:** W′-Balance, theoretisch verfügbare Dauerleistung und Fahrtstatistik. Parameter kommen aus Intervals.icu (Rad-FTP/W′, gegebenenfalls Indoor-FTP) oder werden als CP/W′ manuell eingegeben. Deutsch und Englisch werden unterstützt.
 
-Ultra ist noch nicht implementiert. Metrische Einheiten sind derzeit fest eingestellt.
+kEtape unterstützt Deutsch und Englisch. Die Datenfelder verwenden metrische Einheiten.
 
 ## Installation und Updates
-
-Ziel für neue Releases: [kEtape Downloads](https://github.com/jlojkasek/ketape/releases). Die Umstellung ist lokal vorbereitet, noch nicht veröffentlicht. Bisherige Versionen stehen weiterhin im [alten Downloadkanal](https://github.com/jlojkasek/ketape-releases/releases).
 
 Auf dem **neuesten Karoo** kann der direkte GitHub-APK-Link über die Hammerhead Companion App geteilt werden. Auf **Karoo 2** ist dieser Companion-Weg nicht verfügbar; dort per ADB installieren. Siehe [Hammerhead-Anleitung](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading).
 
 Unter kEtape die Einstellungen öffnen, anschließend Felder im Karoo-Fahrprofil hinzufügen. Die Editoransicht verwendet ausschließlich Beispieldaten. Ab 1.0.0 lautet das App-Paket `io.github.jlojkasek.ketape`; der Wechsel von Stacked Fields 0.x erfordert einmalig eine neue Installation, neue Feldplatzierungen und eine erneute Intervals-Verbindung. Updates innerhalb 1.x behalten Paket und Zertifikat bei.
 
-Der Kandidat 1.1.2 verwendet das neue [Update-Manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json). Diese Adresse wird erst nach der freigegebenen Veröffentlichung verfügbar. Der [bisherige Kanal](https://github.com/jlojkasek/ketape-releases/releases/latest/download/manifest.json) bleibt für installierte Versionen erhalten. Die Verteilung erfolgt ausschließlich über GitHub; keine Einreichung bei Awesome Karoo oder der offiziellen Extension Library ist vorgesehen.
+Das [Update-Manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json) verweist auf die jeweils aktuelle APK. Frühere Versionen sind im [Download-Archiv](https://github.com/jlojkasek/ketape-releases/releases) verfügbar.
 
 ## Terminal-first entwickeln
 
@@ -37,31 +37,14 @@ Alternativ werden bestehende lokale Android-Studio-Pfade aus `local.properties` 
 
 ```sh
 scripts/install.sh                         # Debug-APK auf genau einem autorisierten Gerät
-scripts/install.sh dist/v1.1.1/ketape-1.1.1.apk
+scripts/install.sh /pfad/zur/ketape-release.apk
 ```
 
 Bei mehreren Geräten `ANDROID_SERIAL` setzen. Installiert wird mit `adb install -r`, ohne Deinstallation. Abweichende Signaturen werden von Android abgelehnt.
 
-## Abhängigkeiten und Signing
+## Entwicklung und Releases
 
-Gradle 8.9, AGP 8.7.3, Kotlin 2.0.21, Build Tools 35.0.0. Der Gradle-Download hat eine SHA-256-Prüfsumme. Abhängigkeiten werden durch Gradle-Lockdateien und `gradle/verification-metadata.xml` festgelegt. Kein `mavenLocal()`. Prüfsummen bei einem geplanten Dependency-Update bewusst prüfen, nicht zur Umgehung eines Fehlers blind regenerieren.
-
-Karoo SDK 1.1.9 ist unter `vendor/karoo-ext` vendort. Herkunft, Commit und Apache-Lizenz stehen in `UPSTREAM.md` und `LICENSE`. Der dokumentierte Quellstand wurde am 25.11.2026 gegen upstream verglichen: 33 Dateien identisch. So sind keine GitHub-Packages-Zugangsdaten zum Bauen nötig.
-
-Der bisherige Signierschlüssel liegt für lokale Releases nun explizit unter `.signing/release.keystore` (ignoriert, nur Eigentümerzugriff). Das Zertifikat bleibt unverändert. Die ursprüngliche lokale Kopie bleibt erhalten. **Eine unabhängige, verschlüsselte Offline-Sicherung muss der Eigentümer separat aufbewahren.** Die zweite lokale Kopie schützt nicht vor Geräteverlust. Der Schlüssel behält seine bisherigen Android-Debug-Zugangsdaten; entscheidend ist der geschützte Dateizugriff.
-
-Ohne diesen Schlüssel baut CI mit einer eigenen Debug-Signatur auch die Release-Variante. Solche APKs sind keine Updates für veröffentlichte Installationen. Das Release-Skript blockiert ihre Verteilung durch Zertifikatsprüfung. Keine Signierschlüssel in GitHub Secrets nötig.
-
-## Veröffentlichen
-
-```sh
-python3 scripts/release.py                 # nur lokal vorbereiten, kein Upload
-python3 scripts/release.py --verify-only 1.1.0 --compatibility  # öffentlichen Bestand nur lesen/prüfen
-```
-
-Veröffentlichen benötigt ausdrücklich `--publish`, einen sauberen Quellstand, einen auf `origin` gesicherten passenden Tag und einen erfolgreichen aktuellen CI-Lauf auf demselben Commit. APK, Manifest, Prüfsummen und `build-info.json` enthalten eine nachvollziehbare Zuordnung. Vollständiger Ablauf: [Release-Anleitung](releases/README.md).
-
-Die öffentliche 1.1.0 wird nicht überschrieben. Der lokal vorbereitete Migrationskandidat ist **1.1.2 (14)**; veröffentlicht ist weiterhin 1.1.1 (13). Die nicht abschließend rekonstruierte Herkunft des älteren APK ist im [Bestandsprotokoll](releases/AUDIT-2026-11-25.md) festgehalten.
+Die [Release-Anleitung](releases/README.md) beschreibt die lokale Signierung, die GitHub-Checks und die Veröffentlichung. Das eingebundene Karoo SDK enthält seinen [Herkunftsnachweis](vendor/karoo-ext/UPSTREAM.md) und seine [Lizenz](vendor/karoo-ext/LICENSE).
 
 ## Daten, Modell und Kontinuität
 
