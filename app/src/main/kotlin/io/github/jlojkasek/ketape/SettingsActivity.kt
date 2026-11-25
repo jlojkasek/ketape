@@ -4,9 +4,11 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.res.ColorStateList
 import android.text.InputType
+import android.text.TextUtils
 import android.text.method.PasswordTransformationMethod
 import android.text.format.DateFormat
 import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -236,6 +238,11 @@ class SettingsActivity : Activity() {
                     setText(title)
                     isAllCaps = false
                     textSize = 14f
+                    setSingleLine(true)
+                    ellipsize = TextUtils.TruncateAt.END
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        setAutoSizeTextTypeUniformWithConfiguration(11, 14, 1, TypedValue.COMPLEX_UNIT_SP)
+                    }
                     minHeight = dp(48)
                     minimumWidth = 0
                     setPadding(dp(2), 0, dp(2), 0)
