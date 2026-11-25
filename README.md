@@ -1,29 +1,29 @@
-# kEtape für Hammerhead Karoo
+# kEtape for Hammerhead Karoo
 
-Zeige deine wichtigsten Fahrwerte auf weniger Platz an, vergleiche deine Leistung mit deinen Bestwerten und behalte deine W′-Reserve im Blick.
+See your key ride metrics in less space, compare your power with your best efforts, and keep track of your remaining W′.
 
-**[Aktuelle APK herunterladen](https://github.com/jlojkasek/ketape/releases/latest)**
+**[Download the latest APK](https://github.com/jlojkasek/ketape/releases/latest)**
 
-## Datenfelder
+## Data fields
 
-- **Stacked Fields** kombiniert Leistung, Puls, Tempo, Strecke oder Kadenz mit passenden Zusatzwerten wie Durchschnitt, Maximum, Normalized Power oder Höhenmetern. Zonenfarben und Glättung lassen sich einstellen.
-- **Palmarès** zeigt Leistungsbestwerte aus der laufenden Fahrt als Kompaktfeld oder Tabelle. Mit Intervals.icu kannst du sie mit deinen Saisonbestwerten oder den letzten 42 Tagen vergleichen.
-- **Réserve** schätzt, wie viel deiner W′-Reserve noch verfügbar ist. Du kannst deine Radparameter aus Intervals.icu übernehmen oder CP und W′ manuell eingeben.
+- **Stacked Fields** pairs power, heart rate, speed, distance, or cadence with relevant metrics such as averages, maximums, Normalized Power, or elevation gain. You can adjust zone colors and smoothing.
+- **Palmarès** shows your best power efforts from the current ride in a compact field or table. Connect Intervals.icu to compare them with your season bests, your bests from the last 42 days, or both.
+- **Réserve** estimates how much W′ you have left. You can import your cycling parameters from Intervals.icu or enter critical power (CP) and W′ manually.
 
-Die App unterstützt Deutsch und Englisch. Die Datenfelder verwenden metrische Einheiten.
+The app supports English and German. Data fields use metric units.
 
-## Installation und Updates
+## Installation and updates
 
-1. Lade die APK aus dem [aktuellen Release](https://github.com/jlojkasek/ketape/releases/latest) herunter. Bei einem Karoo mit Companion-Sideloading kannst du den direkten APK-Link über die [Hammerhead Companion App](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading) teilen. Beim Karoo 2 erfolgt die Installation per ADB.
-2. Öffne kEtape auf dem Karoo und richte bei Bedarf Intervals.icu oder Réserve ein.
-3. Füge die gewünschten Felder im Karoo-Fahrprofil zu deinen Datenseiten hinzu.
+1. Download the APK from the [latest release](https://github.com/jlojkasek/ketape/releases/latest). On a Karoo that supports Companion sideloading, share the direct APK link with the [Hammerhead Companion app](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Companion-App-Sideloading). On Karoo 2, install the APK using ADB.
+2. Open kEtape on your Karoo. Set up Intervals.icu or Réserve if you plan to use those features.
+3. Edit the data pages in your Karoo ride profile and add the kEtape fields you want.
 
-Installiere Updates über die bestehende App, damit Einstellungen und Feldplatzierungen erhalten bleiben. Das [Update-Manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json) verweist auf die aktuelle APK.
+Install updates over your existing copy to keep your settings and field layouts. The [update manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json) points to the current APK.
 
-## Intervals.icu und Offline-Nutzung
+## Intervals.icu and offline use
 
-Verbinde dein Konto im Reiter „Allgemein“ mit einem persönlichen API-Schlüssel. Der Schlüssel wird verschlüsselt auf dem Karoo gespeichert. kEtape liest die benötigten Referenzwerte und Radparameter. Es schreibt keine Trainingsdaten zu Intervals.icu zurück.
+Connect your account in the **General** tab using a personal API key. kEtape stores the key encrypted on your Karoo and reads the reference values and cycling parameters it needs. It does not write training data back to Intervals.icu.
 
-Bei vorhandener Internetverbindung aktualisiert kEtape fällige Palmarès-Referenzen im Leerlauf. Unterwegs stehen die zuletzt geladenen Werte auch offline zur Verfügung. Den letzten Abgleich siehst du in den Palmarès-Einstellungen.
+When your Karoo is online and idle, kEtape refreshes Palmarès reference values if an update is due. The most recently downloaded values are still available offline. You can see when they were last refreshed in the Palmarès tab.
 
-Réserve ist eine Schätzung. Der Wert hilft dir bei der Einteilung deiner Leistung, kann aber deine tatsächliche Ermüdung nicht messen.
+Réserve provides an estimate to help you pace your effort. It does not measure your actual fatigue.
