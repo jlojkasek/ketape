@@ -31,13 +31,13 @@ class ReleaseTests(unittest.TestCase):
     def test_private_distribution_is_not_exposed(self):
         with patch.object(release, 'run', side_effect=[None, '[[{"full_name":"' + release.CHANNEL['repository'] + '","private":true}]]']) as run:
             with self.assertRaisesRegex(ValueError, 'privat'):
-                release.publish('0.1.2', 3, [], True)
+                release.publish('0.1.2', 3, [])
             self.assertEqual(2, run.call_count)
 
     def test_published_release_cannot_be_overwritten(self):
         with patch.object(release, 'run', side_effect=[None, '[[{"full_name":"' + release.CHANNEL['repository'] + '","private":false}]]', '[[{"tag_name":"v0.1.2","draft":false}]]']) as run:
             with self.assertRaisesRegex(ValueError, 'bereits veröffentlicht'):
-                release.publish('0.1.2', 3, [], False)
+                release.publish('0.1.2', 3, [])
             self.assertEqual(3, run.call_count)
 
 
@@ -137,11 +137,11 @@ class PublicationReadbackTests(unittest.TestCase):
                     patch.object(release, 'verify_public', side_effect=OSError('network') if failed_public_check else None):
                 if wrong_download:
                     with self.assertRaisesRegex(ValueError, 'Entwurfsdatei'):
-                        release.publish('1.1.1', 13, [asset], False)
+                        release.publish('1.1.1', 13, [asset])
                     self.assertFalse(any(c[:3] == ('gh', 'release', 'edit') for c in calls))
                 elif failed_public_check:
                     with self.assertRaisesRegex(release.PublishedVerificationError, 'IST veröffentlicht'):
-                        release.publish('1.1.1', 13, [asset], False)
+                        release.publish('1.1.1', 13, [asset])
                     self.assertEqual(1, sum(c[:3] == ('gh', 'release', 'edit') for c in calls))
 
     def test_corrupt_draft_never_becomes_public(self):
@@ -161,80 +161,4 @@ class MigrationPublicationTests(unittest.TestCase):
             for c in [13, 15]
         ]):
             with self.assertRaisesRegex(ValueError, 'versionCode'):
-                release.check_version_codes('jlojkasek/ketape-releases', 14, history)
-
-    def test_legacy_conflict_blocks_primary_before_upload(self):
-        import json
-        calls = []
-        def run(*args, **kwargs):
-            calls.append(args)
-            if args[:3] == ('gh', 'api', '--paginate'):
-                if 'user/repos' in args[-1]:
-                    return json.dumps([[dict(full_name=release.CHANNEL['repository'], private=False)]])
-                if 'ketape-releases' in args[-1]:
-                    return json.dumps([[dict(tag_name='v2.0.0', draft=False, prerelease=False)]])
-                return '[[]]'
-            if args[:3] == ('gh', 'release', 'download'):
-                return json.dumps(dict(packageName=release.CHANNEL['packageName'], latestVersionCode=20))
-            return ''
-        with patch.object(release, 'run', side_effect=run):
-            with self.assertRaisesRegex(ValueError, 'versionCode'):
-                release.publish('1.1.2', 14, [], False)
-        self.assertFalse(any(c[:3] in [('gh', 'release', 'create'), ('gh', 'release', 'upload'),
-                                     ('gh', 'release', 'edit')] for c in calls))
-
-    def test_compatibility_requires_verified_primary(self):
-        with patch.object(release, 'check_source', return_value='abc'), \
-                patch.object(release, 'verify_public', side_effect=ValueError('primary failed')), \
-                patch.object(release, 'publish') as publish, patch.object(release, 'public_bytes') as download:
-            with self.assertRaisesRegex(ValueError, 'primary failed'):
-                release.publish_compatibility('1.1.2', Path('/tools'))
-            publish.assert_not_called()
-            download.assert_not_called()
-
-    def test_compatibility_preserves_apk_and_rejects_wrong_provenance(self):
-        import json, hashlib
-        apk = b'identical signed apk'
-        for commit in ['abc', 'wrong']:
-            document = release.manifest('1.1.2', 14, 'notes')
-            info = dict(sourceCommit=commit, sourceDirty=False, apkSha256=hashlib.sha256(apk).hexdigest())
-            payloads = {'ketape-1.1.2.apk': apk, 'manifest.json': json.dumps(document).encode(),
-                        'build-info.json': json.dumps(info).encode(), 'SHA256SUMS': b'validated by verify_public'}
-            def publish(version, code, assets, setup, repository=None):
-                self.assertEqual((version, code, setup), ('1.1.2', 14, False))
-                self.assertEqual(repository, 'jlojkasek/ketape-releases')
-                self.assertEqual(assets[0].read_bytes(), apk)
-                manifest = json.loads(assets[1].read_text())
-                self.assertEqual(manifest['latestApkUrl'],
-                    'https://github.com/jlojkasek/ketape-releases/releases/download/v1.1.2/ketape-1.1.2.apk')
-                self.assertEqual(assets[2].read_bytes(), payloads['build-info.json'])
-                for line in assets[3].read_text().splitlines():
-                    digest, name = line.split()
-                    self.assertEqual(digest, hashlib.sha256((assets[0].parent / name).read_bytes()).hexdigest())
-            with patch.object(release, 'check_source', return_value='abc'), \
-                    patch.object(release, 'verify_public'), \
-                    patch.object(release, 'public_bytes', side_effect=lambda url: payloads[url.rsplit('/', 1)[1]]), \
-                    patch.object(release, 'inspect_apk', return_value=('1.1.2', 14)), \
-                    patch.object(release, 'publish', side_effect=publish) as send:
-                if commit == 'abc':
-                    release.publish_compatibility('1.1.2', Path('/tools'))
-                    send.assert_called_once()
-                else:
-                    with self.assertRaisesRegex(ValueError, 'Quellcommit'):
-                        release.publish_compatibility('1.1.2', Path('/tools'))
-                    send.assert_not_called()
-
-    def test_legacy_public_verification_uses_only_legacy_urls(self):
-        import json, hashlib
-        repo = 'jlojkasek/ketape-releases'
-        apk = b'apk'
-        doc = json.dumps(release.manifest('1.1.2', 14, 'notes', repository=repo)).encode()
-        payloads = {'manifest.json': doc, 'ketape-1.1.2.apk': apk}
-        payloads['SHA256SUMS'] = ''.join(f'{hashlib.sha256(v).hexdigest()}  {k}\n'
-                                        for k, v in payloads.items()).encode()
-        def fetch(url):
-            self.assertTrue(url.startswith(f'https://github.com/{repo}/releases/'))
-            return payloads[url.rsplit('/', 1)[1]]
-        with patch.object(release, 'public_bytes', side_effect=fetch), \
-                patch.object(release, 'inspect_apk', return_value=('1.1.2', 14)):
-            release.verify_public('1.1.2', Path('/tools'), require_latest=True, repository=repo)
+                release.check_version_codes(release.CHANNEL['repository'], 14, history)

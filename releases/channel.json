@@ -1,6 +1,5 @@
 {
   "repository": "jlojkasek/ketape",
-  "compatibilityRepository": "jlojkasek/ketape-releases",
   "packageName": "io.github.jlojkasek.ketape",
   "certificateSha256": "1aa19d4c284fe6353076d6b0f3411fc3918ec9d1d20d226b4afe61682595a4ea"
 }
