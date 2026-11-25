@@ -24,7 +24,7 @@
   <string name="settings_balance_warning">Balance warning threshold</string>
   <string name="settings_balance_warning_value">Warning threshold · %1$s</string>
   <string name="settings_balance_warning_threshold">%1$d percentage points</string>
-  <string name="settings_balance_warning_detail">The field turns red when either leg deviates from 50% by more than the selected threshold. At 5 percentage points, 44/56 turns red and 45/55 stays normal.</string>
+  <string name="settings_balance_warning_detail">The field turns red when either leg differs from half of the total power by more than the selected threshold. At 5 percentage points, 44/56 turns red and 45/55 stays normal.</string>
   <string name="settings_about">About Stacked Fields</string>
   <string name="settings_setup">Edit a data page in your Karoo profile and select a field under Stacked Fields.</string>
   <string name="settings_updates">Find updates in the app manager on your Karoo.</string>

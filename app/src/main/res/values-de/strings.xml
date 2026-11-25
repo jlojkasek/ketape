@@ -24,7 +24,7 @@
   <string name="settings_balance_warning">Balance-Warnschwelle</string>
   <string name="settings_balance_warning_value">Warnschwelle · %1$s</string>
   <string name="settings_balance_warning_threshold">%1$d Prozentpunkte</string>
-  <string name="settings_balance_warning_detail">Das Feld wird rot, wenn ein Bein um mehr als die gewählte Schwelle von 50 % abweicht. Bei 5 Prozentpunkten wird 44/56 rot, 45/55 bleibt normal.</string>
+  <string name="settings_balance_warning_detail">Das Feld wird rot, wenn der Leistungsanteil eines Beins um mehr als die gewählte Schwelle von der Hälfte abweicht. Bei 5 Prozentpunkten wird 44/56 rot, 45/55 bleibt normal.</string>
   <string name="settings_about">Über Stacked Fields</string>
   <string name="settings_setup">Bearbeite eine Datenseite in deinem Karoo-Profil und wähle unter Stacked Fields das gewünschte Feld.</string>
   <string name="settings_updates">Updates findest du in der App-Verwaltung auf dem Karoo.</string>
