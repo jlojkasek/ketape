@@ -1,11 +1,9 @@
-<ExtensionInfo id="stacked-fields" displayName="@string/app_name" icon="@drawable/ic_stacked" scansDevices="false">
-  <DataType typeId="power-1s" displayName="@string/field_0" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="power-3s" displayName="@string/field_1" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="power-5s" displayName="@string/field_2" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="heart" displayName="@string/field_3" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="speed" displayName="@string/field_4" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="distance" displayName="@string/field_5" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="cadence" displayName="@string/field_6" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="best-comparison" displayName="@string/power_best_table" description="@string/best_comparison_description" graphical="true" icon="@drawable/ic_stacked" />
-  <DataType typeId="power-best-auto" displayName="@string/power_best_auto" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
+<ExtensionInfo id="ketape" displayName="@string/app_name" icon="@drawable/ic_stacked" scansDevices="false">
+  <DataType typeId="power" displayName="@string/field_0" description="@string/power_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="heart-rate" displayName="@string/field_3" description="@string/heart_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="speed" displayName="@string/field_4" description="@string/speed_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="distance" displayName="@string/field_5" description="@string/distance_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="cadence" displayName="@string/field_6" description="@string/cadence_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="palmares-table" displayName="@string/power_best_table" description="@string/best_comparison_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="palmares-auto" displayName="@string/power_best_auto" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />
 </ExtensionInfo>

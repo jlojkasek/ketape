@@ -22,6 +22,6 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: karoo-stacked-fields-debug
+          name: ketape-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

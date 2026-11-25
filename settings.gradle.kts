@@ -6,7 +6,7 @@ dependencyResolutionManagement {
 
     }
 }
-rootProject.name = "KarooStackedFields"
+rootProject.name = "kEtape"
 include(":app")
 
 include(":karoo-ext")

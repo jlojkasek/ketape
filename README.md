@@ -1,22 +1,19 @@
-# Karoo Stacked Fields
+# kEtape
 
-Testversion 0.1.0 für den Hammerhead Karoo 3. Debug-APK erfolgreich gebaut und signiert. Acht Unit-Tests bestanden; Android Lint meldet keine Fehler. Ein Test auf dem Karoo steht noch aus.
+**Bessere Fahrdaten für deinen Karoo.**
 
-Test-APK: `dist/karoo-stacked-fields-0.1.0-debug.apk`.
+kEtape bringt Stacked Fields und Palmarès auf den Hammerhead Karoo. Kombiniere Live-Werte und Fahrtstatistiken in kompakten Feldern oder nutze eine ganze Seite für deine Leistungsbestwerte. Mit Intervals.icu siehst du während der Fahrt, wie nah du an deinen Bestwerten aus der Saison oder den letzten 42 Tagen bist.
 
-## Felder
+- **Fahrdaten kompakt sehen.** Leistung mit Durchschnitt und NP, Puls und Tempo mit Durchschnitt und Maximum, Strecke mit Höhenmetern und Trittfrequenz auf einen Blick.
+- **Die Anzeige an dein Training anpassen.** Wähle die Glättung des Hauptwerts und lass dir Leistungs- und Pulszonen farbig anzeigen. Mit einem kompatiblen Leistungsmesser kannst du die Links-rechts-Balance samt Warnschwelle einblenden.
+- **Leistungsbestwerte während der Fahrt vergleichen.** Palmarès zeigt deinen besten Wert der aktuellen Fahrt neben deinen Intervals.icu-Referenzen. Du wählst die Dauern von 1 Sekunde bis 60 Minuten und entscheidest zwischen einem kompakten, automatisch wechselnden Feld und der Tabelle.
+- **Neue Bestwerte erkennen.** Leistungs- und Herzfrequenzfelder können einen übertroffenen Referenzwert kurz einblenden. Den Signalton kannst du separat aktivieren.
 
-| Auswahl | Groß | Unten links | Unten rechts |
-|---|---|---|---|
-| Leistung 1 s | aktuelle Watt | Fahrt-Ø | Fahrt-NP |
-| Leistung 3 s | Karoo 3-s-Mittel | Fahrt-Ø | Fahrt-NP |
-| Leistung 5 s | Karoo 5-s-Mittel | Fahrt-Ø | Fahrt-NP |
-| Herzfrequenz | aktuelle bpm | Fahrt-Ø | Fahrt-Maximum |
-| Geschwindigkeit | aktuelle km/h | Fahrt-Ø | Fahrt-Maximum |
-| Strecke | gefahrene km | Anstieg (↗ m) | Abfahrt (↘ m) |
-| Trittfrequenz | aktuelle rpm | Fahrt-Ø oder L-Anteil | Fahrt-Maximum oder R-Anteil |
+## Einrichtung
 
-Die Leistungsvarianten sind einzeln im Feldwähler auswählbar und können parallel verwendet werden. Kein eigener Mittelwert- oder NP-Speicher: Fahrtstatistiken stammen aus den eingebauten Karoo-Streams. Der Seitenwechsel setzt sie daher nicht zurück. Fehlende Werte erscheinen als `--`, Nullwerte bleiben sichtbar. Nur im Profil-Editor mit `ViewConfig.preview` werden Beispielwerte gezeigt.
+1. Die APK aus den [Veröffentlichungen](https://github.com/jlojkasek/ketape-releases/releases) auf dem Karoo installieren.
+2. Im Fahrprofil eine Datenseite bearbeiten und unter **kEtape** die gewünschten Felder hinzufügen.
+3. Unter **Anzeige** Glättung, Zonenfarben und Balance einstellen. Für historische Referenzwerte im Tab **Palmarès** mit Intervals.icu verbinden.
 
 ## Vorschau
 
@@ -34,11 +31,11 @@ Quellen: https://github.com/hammerheadnav/karoo-ext und https://hammerheadnav.gi
 
 1. Entwickleroptionen und USB-Debugging am Karoo einschalten.
 2. Karoo per USB-Datenkabel anschließen und die Debugging-Freigabe am Gerät bestätigen.
-3. `scripts/build.sh`, dann `scripts/install.sh` ausführen. Die Installation aktualisiert ausschließlich `de.jannes.stacked`.
+3. `scripts/build.sh`, dann `scripts/install.sh` ausführen. Die Installation aktualisiert ausschließlich `io.github.jlojkasek.ketape`.
 4. In der App Hell oder Dunkel wählen. Automatik folgt zunächst nur dem Android-Nachtmodus.
-5. Im Fahrprofil eine Datenseite bearbeiten und unter Stacked Fields ein Feld wählen. Zunächst ein großes Feld oder eine Viertelseite verwenden.
+5. Im Fahrprofil eine Datenseite bearbeiten und unter kEtape ein Feld wählen. Zunächst ein großes Feld oder eine Viertelseite verwenden.
 6. Kurze Testaufzeichnung mit Sensoren starten. Watt, Ø und NP mit eingebauten Karoo-Feldern vergleichen. Danach Pause, Fortsetzen, Seitenwechsel, Sensorverlust, Fahrtende und neue Fahrt prüfen.
-7. 1 s, 3 s und 5 s parallel vergleichen. Die beiden kleinen Fahrtwerte müssen übereinstimmen.
+7. Die Glättung des Leistungsfelds in den App-Einstellungen umstellen und die Datenseite erneut öffnen. Fahrt-Ø und NP mit den nativen Feldern vergleichen.
 
 ## Offene Prüfungen und Grenzen
 
@@ -54,9 +51,9 @@ Als nächste Felder bieten sich Höhenmeter (Anstieg, Abstieg, Höhe), Runde (Ru
 
 ## Zonenfarben
 
-Leistung (alle drei Glättungen) und Herzfrequenz beobachten `UserProfile`. Die Zone wird anhand der dort hinterlegten absoluten Min-/Max-Grenzen aus dem angezeigten Hauptwert ermittelt. Es werden keine FTP- oder Max-HF-Standardzonen geraten. Profiländerungen greifen bei der nächsten Darstellung.
+Leistung und Herzfrequenz beobachten `UserProfile`. Die Zone wird anhand der dort hinterlegten absoluten Min-/Max-Grenzen aus dem angezeigten Hauptwert ermittelt. Es werden keine FTP- oder Max-HF-Standardzonen geraten. Profiländerungen greifen bei der nächsten Darstellung.
 
-In der App: farbiger Hintergrund (Standard), farbiges Zonenabzeichen oder Aus. Zonen werden zusätzlich als Z1, Z2 usw. angezeigt. Die Textfarbe wird mit dem höheren Schwarz-/Weiß-Kontrast gewählt. Fahrt-Ø und NP bleiben die originalen Karoo-Werte. Ohne gültige Zonen oder aktuellen Sensorwert wird neutral dargestellt. An gemeinsam genutzten Grenzen gewinnt die höhere Zone; Lücken und Werte außerhalb aller Grenzen bleiben neutral.
+In der App: farbiger Hintergrund (Standard), farbiges Zonenabzeichen oder Aus. Im Abzeichenmodus erscheint die Zone als Z1, Z2 usw. Die Textfarbe wird mit dem höheren Schwarz-/Weiß-Kontrast gewählt. Fahrt-Ø und NP bleiben die originalen Karoo-Werte. Ohne gültige Zonen oder aktuellen Sensorwert wird neutral dargestellt. An gemeinsam genutzten Grenzen gewinnt die höhere Zone; Lücken und Werte außerhalb aller Grenzen bleiben neutral.
 
 Die Palette ist an Karoo angelehnt und fest hinterlegt: Leistung grau, blau, grün, gelb, orange, rot, violett; HF grau, blau, grün, gelb, rot. Das SDK liefert mit `UserProfile.Zone(min, max)` keine nativen Farbwerte. Exakte Karoo-Farbtöne und abweichende Zonenanzahlen sind am Gerät abzugleichen. Über sieben Leistungs- bzw. fünf HF-Zonen wird neutral dargestellt, sobald kein Paletteneintrag vorhanden ist.
 
@@ -98,7 +95,7 @@ Die Python-Tests laufen mit `python3 -m unittest discover -s scripts/tests -v`. 
 
 ## Minimales Layout
 
-Die obere Beschriftungszeile entfällt. Links neben dem Hauptwert steht ein monochromes Symbol (Blitz, Herz, Tacho, Strecke, Kurbel). Die kleine Einheit bleibt rechts am Hauptwert. Die Zonennummer sitzt in der unteren Wertezeile. Symbole folgen dem Kontrast von Hell/Dunkel bzw. Zonenhintergrund. Die Leistungsglättung bleibt im Feldwähler und in der zugänglichen Symbolbeschreibung erkennbar.
+Die obere Beschriftungszeile entfällt. Links neben dem Hauptwert steht ein monochromes Symbol (Blitz, Herz, Tacho, Strecke, Kurbel). Die kleine Einheit bleibt rechts am Hauptwert. Im Abzeichenmodus sitzt die Zonennummer in der unteren Wertezeile. Symbole folgen dem Kontrast von Hell/Dunkel bzw. Zonenhintergrund. Die Glättung des Hauptwerts lässt sich in den Einstellungen unter **Anzeige** wählen.
 
 Das Streckenfeld zeigt gefahrene Kilometer groß und darunter links die während der aktuellen Fahrt gesammelten Anstiegshöhenmeter (`ELEVATION_GAIN`, ↗ m) und rechts die Abfahrts-Höhenmeter (`ELEVATION_LOSS`, ↘ m). Diese Auslegung bezieht sich auf bereits gefahrene Höhenmeter, nicht auf geplante Routenhöhenmeter. Fahrtzeit und Ø-Geschwindigkeit entfallen dort.
 
@@ -126,7 +123,7 @@ Ohne gültige Balance, bei gemeldeten Null-Watt oder nach fünf Sekunden ohne Ba
 
 Das Repository enthält Quellcode, vendortes Karoo-SDK samt Lizenz, Gradle-Wrapper, Tests, Diagnose-/Installationsskripte und die HTML-Vorschau. Lokale SDK-/JDK-Pfade, Build-Caches, Schlüssel und erzeugte APKs sind ausgeschlossen.
 
-Unter GitHub Actions läuft bei Push und Pull Request sowie manuell der Workflow „Build and checks“: Java 21, Unit-Tests, Android Lint und Debug-APK. Nach erfolgreichem Lauf steht die APK als Workflow-Artefakt `karoo-stacked-fields-debug` bereit. Für manuell installierte APKs und CI-Builds können unterschiedliche Debug-Signaturschlüssel verwendet werden; ein Update über eine anders signierte Installation erfordert deren vorherige Deinstallation. Veröffentlichte APKs werden lokal mit dem bestehenden App-Zertifikat signiert.
+Unter GitHub Actions läuft bei Push und Pull Request sowie manuell der Workflow „Build and checks“: Java 21, Unit-Tests, Android Lint und Debug-APK. Nach erfolgreichem Lauf steht die APK als Workflow-Artefakt `ketape-debug` bereit. Für manuell installierte APKs und CI-Builds können unterschiedliche Debug-Signaturschlüssel verwendet werden; ein Update über eine anders signierte Installation erfordert deren vorherige Deinstallation. Veröffentlichte APKs werden lokal mit dem bestehenden App-Zertifikat signiert.
 
 ## Version 0.1.1
 
@@ -151,6 +148,5 @@ und die zwischengespeicherten Bestwerte vom Gerät. Den Schlüssel selbst kannst
 du in Intervals.icu widerrufen oder neu erzeugen.
 
 Die Erweiterung liest Rad-Bestwerte über die Intervals.icu-API und speichert die
-Vergleichswerte auf dem Karoo. Für die Auswertung stehen aktuelle Saison und
-letzte 42 Tage zur Wahl. Erfasst werden 1 s, 5 s, 1 min, 5 min und 20 min Leistung
-sowie optional der maximale Puls.
+Vergleichswerte auf dem Karoo. Für Palmarès stehen die aktuelle Saison, die letzten 42 Tage oder beide Zeiträume zur Wahl. Die Leistungsdauern sind von 1 Sekunde bis 60 Minuten auswählbar.
+Optionale Pulsbestwert-Meldungen erscheinen im Herzfrequenz-Feld.

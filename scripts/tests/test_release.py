@@ -12,8 +12,8 @@ class ReleaseTests(unittest.TestCase):
     def test_manifest_uses_versioned_apk_and_numeric_code(self):
         manifest = release.manifest('0.1.2', 3, 'Notes')
         self.assertEqual(3, manifest['latestVersionCode'])
-        self.assertEqual('de.jannes.stacked', manifest['packageName'])
-        self.assertTrue(manifest['latestApkUrl'].endswith('/v0.1.2/karoo-stacked-fields-0.1.2.apk'))
+        self.assertEqual('io.github.jlojkasek.ketape', manifest['packageName'])
+        self.assertTrue(manifest['latestApkUrl'].endswith('/v0.1.2/ketape-0.1.2.apk'))
 
     def test_wrong_signer_blocks_publication(self):
         with patch.object(release, 'run', return_value='Signer #1 certificate SHA-256 digest: deadbeef'):

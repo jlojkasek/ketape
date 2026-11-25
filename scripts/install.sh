@@ -12,4 +12,4 @@ if [ ! -f "$apk" ]; then echo 'APK fehlt. Zuerst scripts/build.sh ausführen.' >
 "$adb_bin" devices
 # adb fails safely if several devices are connected; use ANDROID_SERIAL to select one.
 "$adb_bin" install -r "$apk"
-"$adb_bin" shell am start -n de.jannes.stacked/.SettingsActivity
+"$adb_bin" shell am start -n io.github.jlojkasek.ketape/.SettingsActivity

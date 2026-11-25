@@ -1,9 +1,9 @@
 # Karoo-Release
 
-Erhöhe `versionName` und `versionCode` in `app/build.gradle.kts` und schreibe die öffentlichen Versionshinweise in `releases/<versionName>.md`. Committe die Änderungen im privaten Quellrepo. Für Version 0.1.3 lautet der Ablauf danach:
+Erhöhe `versionName` und `versionCode` in `app/build.gradle.kts` und schreibe die öffentlichen Versionshinweise in `releases/<versionName>.md`. Committe die Änderungen im privaten Quellrepo. Für Version 1.0.0 lautet der Ablauf danach:
 
 ```sh
-git tag v0.1.3
+git tag v1.0.0
 python3 scripts/release.py
 ```
 
@@ -19,4 +19,4 @@ Gradle verwendet für den Release-Build denselben lokalen Keystore wie für die 
 
 ## Update auf dem Karoo
 
-Installationen ab 0.1.2 kennen das [Update-Manifest](https://github.com/jlojkasek/karoo-stacked-fields-releases/releases/latest/download/manifest.json). Ältere Installationen brauchen einmalig ein manuelles Update. Den vollständigen Updatepfad testest du auf einem Karoo, der noch die ältere Version installiert hat, sobald eine neuere Version öffentlich ist.
+Ab Version 1.0.0 verwendet kEtape das Android-Paket `io.github.jlojkasek.ketape` und eigene Feld-IDs. Installiere diese Version einmal manuell, lege deine Datenseiten neu an und verbinde Intervals.icu erneut. Die vorherige Erweiterung kann danach deinstalliert werden. Weitere kEtape-Versionen finden Updates über das [Update-Manifest](https://github.com/jlojkasek/ketape-releases/releases/latest/download/manifest.json).

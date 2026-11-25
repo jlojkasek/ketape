@@ -1,13 +1,13 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android {
-    namespace = "de.jannes.stacked"
+    namespace = "io.github.jlojkasek.ketape"
     compileSdk = 35
     defaultConfig {
-        applicationId = "de.jannes.stacked"
+        applicationId = "io.github.jlojkasek.ketape"
         minSdk = 23
         targetSdk = 34
-        versionCode = 9
-        versionName = "0.1.8"
+        versionCode = 10
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { buildConfig = true }

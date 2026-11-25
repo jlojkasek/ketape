@@ -56,10 +56,13 @@ def inspect_apk(apk, tools):
 
 def manifest(version, code, notes):
     repo = CHANNEL['repository']
-    return dict(label='Stacked Fields', packageName=CHANNEL['packageName'],
-                latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/karoo-stacked-fields-{version}.apk',
+    return dict(label='kEtape', packageName=CHANNEL['packageName'],
+                latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/ketape-{version}.apk',
                 latestVersion=version, latestVersionCode=code, developer='Jannes Lojkasek',
-                description='Kompakte Datenfelder für Leistung, Herzfrequenz, Geschwindigkeit, Strecke und Trittfrequenz.',
+                description=(
+                    'Bessere Fahrdaten für deinen Karoo. Passe deine Stacked Fields an '
+                    'und vergleiche mit Palmarès deine Leistungsbestwerte während der Fahrt mit Intervals.icu.'
+                ),
                 releaseNotes=notes)
 
 
@@ -75,7 +78,7 @@ def prepare(apk, tools):
     notes = (ROOT / f'releases/{version}.md').read_text().strip()
     folder = ROOT / 'dist' / f'v{version}'
     folder.mkdir(parents=True, exist_ok=True)
-    target = folder / f'karoo-stacked-fields-{version}.apk'
+    target = folder / f'ketape-{version}.apk'
     shutil.copy2(apk, target)
     document = manifest(version, code, notes)
     source = ET.parse(ROOT / 'app/src/main/AndroidManifest.xml')
@@ -103,7 +106,7 @@ def publish(version, code, assets, setup):
         if not setup:
             raise ValueError('Download-Repository fehlt. Einmal mit --setup veröffentlichen.')
         run('gh', 'repo', 'create', repo, '--public', '--add-readme', '--description',
-            'APK downloads and update manifest for Karoo Stacked Fields. Source code is maintained separately.')
+            'Custom ride data fields and live Intervals.icu best-effort comparisons for Hammerhead Karoo.')
     elif info['private']:
         raise ValueError('Download-Repository ist privat. Es wird nicht automatisch öffentlich gemacht.')
     releases = json.loads(run('gh', 'api', '--paginate', '--slurp',
@@ -121,7 +124,7 @@ def publish(version, code, assets, setup):
             raise ValueError('versionCode muss höher als im bisherigen Update sein.')
     if not existing:
         run('gh', 'release', 'create', tag, '--repo', repo, '--draft', '--title',
-            f'Karoo Stacked Fields {version}', '--notes-file', ROOT / f'releases/{version}.md')
+            f'kEtape {version}', '--notes-file', ROOT / f'releases/{version}.md')
     run('gh', 'release', 'upload', tag, *assets, '--repo', repo, '--clobber')
     run('gh', 'release', 'edit', tag, '--repo', repo, '--draft=false', '--latest')
     # Prove that the device can fetch both files without GitHub credentials.
