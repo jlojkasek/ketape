@@ -144,8 +144,9 @@ Die App registriert eine feste Manifest-Adresse beim Karoo. Der Terminalbefehl `
 
 Wähle in den Einstellungen der Erweiterung **Intervals.icu verbinden** und
 gib deinen persönlichen API-Schlüssel aus den Intervals.icu-Entwicklereinstellungen
-ein. Beim ersten Abgleich prüft die App den Schlüssel und speichert ihn danach
-verschlüsselt auf dem Karoo. **Intervals.icu trennen** entfernt den Schlüssel
+ein. Die App prüft den Schlüssel über das Athletenprofil und speichert ihn
+verschlüsselt auf dem Karoo. Unter **Synchronisierte Bestwerte** zeigt sie
+die geladenen Werte und das Datum des letzten Abgleichs. **Intervals.icu trennen** entfernt den Schlüssel
 und die zwischengespeicherten Bestwerte vom Gerät. Den Schlüssel selbst kannst
 du in Intervals.icu widerrufen oder neu erzeugen.
 

@@ -30,6 +30,11 @@ class SettingsActivity : Activity() {
     private val records by lazy { IntervalsRecords(this) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var recordStatus: TextView
+    private lateinit var recordFeedback: TextView
+    private lateinit var recordDetails: LinearLayout
+    private lateinit var recordValues: LinearLayout
+    private lateinit var recordDates: TextView
+    private lateinit var disconnectButton: Button
     private lateinit var connectButton: Button
     private lateinit var syncButton: Button
     private var recordJob: Job? = null
@@ -115,40 +120,59 @@ class SettingsActivity : Activity() {
 
             addView(label(R.string.records_title, heading = true))
             addView(label(R.string.records_detail))
-            recordStatus = TextView(this@SettingsActivity).also { addView(it) }
+            recordStatus = TextView(this@SettingsActivity).apply {
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, dp(8), 0, 0)
+            }.also { addView(it) }
+            recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
             connectButton = Button(this@SettingsActivity).apply {
-                setOnClickListener {
-                    if (records.connected) {
-                        runRecordAction { records.disconnect() }
-                    } else {
-                        showApiKeyDialog()
+                setText(R.string.records_connect)
+                setOnClickListener { showApiKeyDialog() }
+            }.also { addView(it) }
+            recordDetails = LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(label(R.string.records_period, heading = true))
+                addView(choices(RECORD_PERIOD, listOf(
+                    "s0" to R.string.records_season, "42d" to R.string.records_42_days
+                )) { syncRecords() })
+                addView(label(R.string.records_saved_values, heading = true))
+                recordDates = TextView(this@SettingsActivity).also { addView(it) }
+                recordValues = LinearLayout(this@SettingsActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                }.also { addView(it) }
+                syncButton = Button(this@SettingsActivity).apply {
+                    setText(R.string.records_sync)
+                    setOnClickListener { syncRecords(force = true) }
+                }.also { addView(it) }
+                addView(Switch(this@SettingsActivity).apply {
+                    setText(R.string.records_heart)
+                    minHeight = dp(48)
+                    isChecked = prefs.getBoolean(RECORD_HEART, false)
+                    setOnCheckedChangeListener { _, enabled ->
+                        prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
+                        if (enabled) syncRecords(force = true) else updateRecordStatus()
                     }
-                }
+                })
+                addView(Switch(this@SettingsActivity).apply {
+                    setText(R.string.records_sound)
+                    minHeight = dp(48)
+                    isChecked = prefs.getBoolean(RECORD_SOUND, false)
+                    setOnCheckedChangeListener { _, enabled ->
+                        prefs.edit().putBoolean(RECORD_SOUND, enabled).apply()
+                    }
+                })
+                disconnectButton = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                    setText(R.string.records_disconnect)
+                    setOnClickListener {
+                        AlertDialog.Builder(this@SettingsActivity)
+                            .setMessage(R.string.records_disconnect_detail)
+                            .setNegativeButton(R.string.settings_cancel, null)
+                            .setPositiveButton(R.string.records_disconnect) { _, _ ->
+                                runRecordAction { records.disconnect() }
+                            }.show()
+                    }
+                }.also { addView(it) }
             }.also { addView(it) }
-            syncButton = Button(this@SettingsActivity).apply {
-                setText(R.string.records_sync)
-                setOnClickListener { syncRecords(force = true) }
-            }.also { addView(it) }
-            addView(choices(RECORD_PERIOD, listOf("s0" to R.string.records_season, "42d" to R.string.records_42_days)) {
-                syncRecords()
-            })
-            addView(Switch(this@SettingsActivity).apply {
-                setText(R.string.records_heart)
-                minHeight = dp(48)
-                isChecked = prefs.getBoolean(RECORD_HEART, false)
-                setOnCheckedChangeListener { _, enabled ->
-                    prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
-                    if (enabled) syncRecords(force = true)
-                }
-            })
-            addView(Switch(this@SettingsActivity).apply {
-                setText(R.string.records_sound)
-                minHeight = dp(48)
-                isChecked = prefs.getBoolean(RECORD_SOUND, false)
-                setOnCheckedChangeListener { _, enabled ->
-                    prefs.edit().putBoolean(RECORD_SOUND, enabled).apply()
-                }
-            })
 
             addView(label(R.string.settings_about, heading = true))
             addView(label(R.string.settings_setup))
@@ -206,7 +230,11 @@ class SettingsActivity : Activity() {
                 } else {
                     input.text.clear()
                     dialog.dismiss()
-                    runRecordAction { records.connect(apiKey) }
+                    runRecordAction {
+                        records.connect(apiKey)
+                        updateRecordStatus(R.string.records_working, busy = true)
+                        records.sync(force = true)
+                    }
                 }
             }
         }
@@ -229,26 +257,63 @@ class SettingsActivity : Activity() {
                 throw cancelled
             } catch (_: IntervalsKeyRejected) {
                 updateRecordStatus(R.string.records_key_rejected)
+            } catch (error: IntervalsHttpError) {
+                updateRecordStatus(feedback = getString(R.string.records_http_error, error.status))
+            } catch (_: org.json.JSONException) {
+                updateRecordStatus(R.string.records_data_error)
+            } catch (_: java.io.IOException) {
+                updateRecordStatus(R.string.records_network_error)
             } catch (_: Exception) {
                 updateRecordStatus(R.string.records_error)
             }
         }
     }
 
-    private fun updateRecordStatus(message: Int? = null, busy: Boolean = false) {
+    private fun updateRecordStatus(message: Int? = null, busy: Boolean = false, feedback: String? = null) {
         val connected = records.connected
-        val syncedAt = records.syncedAt()
-        connectButton.setText(if (connected) R.string.records_disconnect else R.string.records_connect)
+        val period = records.period
+        val syncedAt = records.syncedAt(period)
+        connectButton.visibility = if (connected) View.GONE else View.VISIBLE
         connectButton.isEnabled = !busy
-        syncButton.isEnabled = connected && !busy
+        recordDetails.visibility = if (connected) View.VISIBLE else View.GONE
+        syncButton.isEnabled = !busy
+        disconnectButton.isEnabled = !busy
         recordStatus.text = when {
-            message != null -> getString(message)
             !connected -> getString(R.string.records_not_connected)
-            syncedAt == 0L -> getString(R.string.records_pending)
-            else -> Date(syncedAt).let {
-                getString(R.string.records_last_sync,
-                    DateFormat.getDateFormat(this).format(it), DateFormat.getTimeFormat(this).format(it))
+            records.accountName != null -> getString(R.string.records_connected_as, records.accountName)
+            else -> getString(R.string.records_connected)
+        }
+        recordFeedback.text = feedback ?: message?.let { getString(it) }.orEmpty()
+        recordFeedback.visibility = if (recordFeedback.text.isEmpty()) View.GONE else View.VISIBLE
+        recordDates.text = if (syncedAt == 0L) getString(R.string.records_pending) else Date(syncedAt).let {
+            getString(R.string.records_last_sync,
+                DateFormat.getDateFormat(this).format(it), DateFormat.getTimeFormat(this).format(it))
+        }
+        recordValues.removeAllViews()
+        if (syncedAt == 0L) return
+        val durations = if (prefs.getBoolean(RECORD_HEART, false)) powerDurations + HEART_RECORD else powerDurations
+        for (duration in durations) {
+            val title = when (duration) {
+                HEART_RECORD -> getString(R.string.records_max_heart)
+                1, 5 -> getString(R.string.records_seconds, duration)
+                else -> getString(R.string.records_minutes, duration / 60)
             }
+            val value = records.reference(period, duration)
+            val valueText = when {
+                value == null -> getString(R.string.records_no_value)
+                duration == HEART_RECORD -> getString(R.string.records_bpm, value)
+                else -> getString(R.string.records_watts, value)
+            }
+            recordValues.addView(LinearLayout(this).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = dp(28)
+                addView(TextView(this@SettingsActivity).apply { text = title },
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(TextView(this@SettingsActivity).apply {
+                    text = valueText
+                    setTypeface(typeface, Typeface.BOLD)
+                })
+            })
         }
     }
 

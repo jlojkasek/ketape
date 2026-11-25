@@ -19,6 +19,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.net.ssl.HttpsURLConnection
 
+private const val ACCOUNT_NAME = "intervals_account_name"
 private const val API_KEY = "intervals_api_key"
 private const val KEY_ALIAS = "stacked-intervals-token"
 private const val DAY_MS = 86_400_000L
@@ -27,15 +28,15 @@ private const val B64 = Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
 internal class IntervalsRecords(context: Context) {
     private val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
     val connected: Boolean get() = prefs.contains(API_KEY)
+    val accountName: String? get() = prefs.getString(ACCOUNT_NAME, null)
     val period: String get() = if (prefs.getString(RECORD_PERIOD, "s0") == "42d") "42d" else "s0"
 
     suspend fun connect(apiKey: String) = withContext(Dispatchers.IO) {
         mutex.withLock {
-            val selectedPeriod = period
-            val now = System.currentTimeMillis()
-            val values = fetchBestValues(apiKey, selectedPeriod)
+            val profile = request("/api/v1/athlete/0", apiKey)
             val editor = clearAccount().putString(API_KEY, encrypt(apiKey))
-            storeBestValues(editor, selectedPeriod, now, values)
+            (profile.opt("name") as? String)?.takeIf { it.isNotBlank() }?.let { editor.putString(ACCOUNT_NAME, it) }
+            editor.apply()
         }
     }
 
@@ -44,7 +45,7 @@ internal class IntervalsRecords(context: Context) {
     }
 
     private fun clearAccount(): SharedPreferences.Editor {
-        val editor = prefs.edit().remove(API_KEY)
+        val editor = prefs.edit().remove(API_KEY).remove(ACCOUNT_NAME)
         prefs.all.keys.filter { it.startsWith("intervals_cache_") || it.startsWith("intervals_local_") }
             .forEach { editor.remove(it) }
         return editor
@@ -101,8 +102,10 @@ internal class IntervalsRecords(context: Context) {
             val credentials = Base64.encodeToString("API_KEY:$apiKey".toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
             connection.setRequestProperty("Authorization", "Basic $credentials")
             val status = connection.responseCode
-            if (status == 401 || status == 403) throw IntervalsKeyRejected()
-            if (status !in 200..299) throw IOException("Intervals.icu HTTP $status")
+            if (status == 401 || (status == 403 && path == "/api/v1/athlete/0")) {
+                throw IntervalsKeyRejected()
+            }
+            if (status !in 200..299) throw IntervalsHttpError(status)
             return connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
         } finally {
             connection.disconnect()
@@ -138,14 +141,16 @@ internal class IntervalsRecords(context: Context) {
 }
 
 internal class IntervalsKeyRejected : IOException()
+internal class IntervalsHttpError(val status: Int) : IOException()
 
 internal fun curveValues(response: JSONObject, durations: List<Int>, metric: String): Map<Int, Int> {
-    val curves = response.getJSONArray("curves")
+    val curves = response.optJSONArray("list") ?: response.getJSONArray("curves")
     val result = mutableMapOf<Int, Int>()
     for (index in 0 until curves.length()) {
         val curve = curves.getJSONObject(index)
-        val seconds = curve.getJSONArray("secs")
-        val values = curve.optJSONArray("values") ?: curve.getJSONArray(metric)
+        val data = curve.optJSONObject("curve") ?: curve
+        val seconds = data.getJSONArray("secs")
+        val values = data.optJSONArray("values") ?: data.getJSONArray(metric)
         for (point in 0 until seconds.length()) {
             val duration = seconds.optInt(point)
             val value = values.optInt(point)

@@ -50,4 +50,18 @@
   <string name="records_key_help">Deinen persönlichen API-Schlüssel findest du in Intervals.icu unter Einstellungen → Entwicklereinstellungen. Der Schlüssel wird auf diesem Karoo gespeichert.</string>
   <string name="records_key_required">Gib deinen API-Schlüssel ein.</string>
   <string name="records_key_rejected">Intervals.icu hat den API-Schlüssel abgelehnt. Prüfe ihn und versuche es erneut.</string>
+  <string name="records_period">Vergleichszeitraum</string>
+  <string name="records_saved_values">Synchronisierte Bestwerte</string>
+  <string name="records_connected">Mit Intervals.icu verbunden</string>
+  <string name="records_connected_as">Verbunden als %1$s</string>
+  <string name="records_disconnect_detail">Gespeicherten API-Schlüssel und synchronisierte Bestwerte von diesem Karoo entfernen?</string>
+  <string name="records_http_error">Intervals.icu konnte die Daten nicht synchronisieren (HTTP %1$d).</string>
+  <string name="records_data_error">Intervals.icu hat ein unerwartetes Datenformat geliefert.</string>
+  <string name="records_network_error">Intervals.icu ist nicht erreichbar. Prüfe die Internetverbindung.</string>
+  <string name="records_max_heart">Max. Herzfrequenz</string>
+  <string name="records_seconds">%1$d s</string>
+  <string name="records_minutes">%1$d min</string>
+  <string name="records_watts">%1$d W</string>
+  <string name="records_bpm">%1$d bpm</string>
+  <string name="records_no_value">Kein Wert</string>
 </resources>

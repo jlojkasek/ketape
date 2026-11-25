@@ -50,4 +50,18 @@
   <string name="records_key_help">Find your personal API key in Intervals.icu under Settings → Developer Settings. The key is stored on this Karoo.</string>
   <string name="records_key_required">Enter your API key.</string>
   <string name="records_key_rejected">Intervals.icu rejected the API key. Check it and try again.</string>
+  <string name="records_period">Comparison period</string>
+  <string name="records_saved_values">Synced best efforts</string>
+  <string name="records_connected">Connected to Intervals.icu</string>
+  <string name="records_connected_as">Connected as %1$s</string>
+  <string name="records_disconnect_detail">Remove the stored API key and synced best efforts from this Karoo?</string>
+  <string name="records_http_error">Intervals.icu could not sync the data (HTTP %1$d).</string>
+  <string name="records_data_error">Intervals.icu returned an unexpected data format.</string>
+  <string name="records_network_error">Could not reach Intervals.icu. Check your internet connection.</string>
+  <string name="records_max_heart">Max heart rate</string>
+  <string name="records_seconds">%1$d s</string>
+  <string name="records_minutes">%1$d min</string>
+  <string name="records_watts">%1$d W</string>
+  <string name="records_bpm">%1$d bpm</string>
+  <string name="records_no_value">No value</string>
 </resources>
