@@ -52,8 +52,8 @@
   <string name="records_key_rejected">Intervals.icu rejected the API key. Check it and try again.</string>
   <string name="records_period">Comparison period</string>
   <string name="records_saved_values">Synced best efforts</string>
-  <string name="records_connected">Connected to Intervals.icu</string>
-  <string name="records_connected_as">Connected as %1$s</string>
+  <string name="records_connected">Connected to Intervals.icu ✓</string>
+  <string name="records_connected_as">Connected as %1$s ✓</string>
   <string name="records_disconnect_detail">Remove the stored API key and synced best efforts from this Karoo?</string>
   <string name="records_http_error">Intervals.icu could not sync the data (HTTP %1$d).</string>
   <string name="records_data_error">Intervals.icu returned an unexpected data format.</string>
@@ -64,4 +64,16 @@
   <string name="records_watts">%1$d W</string>
   <string name="records_bpm">%1$d bpm</string>
   <string name="records_no_value">No value</string>
+  <string name="best_comparison">Power Best</string>
+  <string name="best_comparison_description">Ride bests on the left of each Intervals.icu reference. Cycles through durations when space is limited.</string>
+  <string name="comparison_best">Best</string>
+  <string name="comparison_ride">Ride</string>
+  <string name="comparison_42_days">42 days</string>
+  <string name="records_season_short">Season</string>
+  <string name="comparison_heart">HR max</string>
+  <string name="comparison_accessible_ride">Ride best %1$s</string>
+  <string name="comparison_accessible_reference">%1$s reference %2$s</string>
+  <string name="records_both">Both periods</string>
+  <string name="settings_tab_display">Display</string>
+  <string name="settings_tab_about">About</string>
 </resources>

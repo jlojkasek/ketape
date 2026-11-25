@@ -30,6 +30,7 @@ class SettingsActivity : Activity() {
     private val records by lazy { IntervalsRecords(this) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var recordStatus: TextView
+    private lateinit var defaultRecordStatusColors: ColorStateList
     private lateinit var recordFeedback: TextView
     private lateinit var recordDetails: LinearLayout
     private lateinit var recordValues: LinearLayout
@@ -38,6 +39,7 @@ class SettingsActivity : Activity() {
     private lateinit var connectButton: Button
     private lateinit var syncButton: Button
     private var recordJob: Job? = null
+    private var selectedTab = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,9 +62,7 @@ class SettingsActivity : Activity() {
             })
         }
 
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), 0, dp(16), dp(16))
+        val display = settingsPage {
             addView(label(R.string.settings_theme, heading = true))
             addView(choices("theme", listOf(
                 "auto" to R.string.settings_system,
@@ -117,13 +117,18 @@ class SettingsActivity : Activity() {
             })
             addView(label(R.string.settings_balance_detail))
             addView(warningSettings)
+        }
 
+        val powerBest = settingsPage {
             addView(label(R.string.records_title, heading = true))
             addView(label(R.string.records_detail))
             recordStatus = TextView(this@SettingsActivity).apply {
                 setTypeface(typeface, Typeface.BOLD)
                 setPadding(0, dp(8), 0, 0)
-            }.also { addView(it) }
+            }.also {
+                defaultRecordStatusColors = it.textColors
+                addView(it)
+            }
             recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
             connectButton = Button(this@SettingsActivity).apply {
                 setText(R.string.records_connect)
@@ -133,7 +138,8 @@ class SettingsActivity : Activity() {
                 orientation = LinearLayout.VERTICAL
                 addView(label(R.string.records_period, heading = true))
                 addView(choices(RECORD_PERIOD, listOf(
-                    "s0" to R.string.records_season, "42d" to R.string.records_42_days
+                    "s0" to R.string.records_season, "42d" to R.string.records_42_days,
+                    "both" to R.string.records_both
                 )) { syncRecords() })
                 addView(label(R.string.records_saved_values, heading = true))
                 recordDates = TextView(this@SettingsActivity).also { addView(it) }
@@ -174,6 +180,9 @@ class SettingsActivity : Activity() {
                 }.also { addView(it) }
             }.also { addView(it) }
 
+        }
+
+        val about = settingsPage {
             addView(label(R.string.settings_about, heading = true))
             addView(label(R.string.settings_setup))
             addView(label(R.string.settings_updates).apply { setPadding(0, dp(8), 0, 0) })
@@ -183,15 +192,65 @@ class SettingsActivity : Activity() {
             })
         }
 
+        val pages = listOf(display, powerBest, about)
+        val accent = TypedValue()
+        theme.resolveAttribute(android.R.attr.colorAccent, accent, true)
+        val tabTitles = listOf(R.string.settings_tab_display, R.string.best_comparison, R.string.settings_tab_about)
+        val tabs = LinearLayout(this)
+        val buttons = mutableListOf<Button>()
+        val indicators = mutableListOf<View>()
+        fun selectTab(index: Int) {
+            selectedTab = index
+            pages.forEachIndexed { position, page ->
+                val selected = position == index
+                page.visibility = if (selected) View.VISIBLE else View.GONE
+                buttons[position].isSelected = selected
+                buttons[position].setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+                indicators[position].visibility = if (selected) View.VISIBLE else View.INVISIBLE
+            }
+        }
+        tabTitles.forEachIndexed { index, title ->
+            tabs.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                    setText(title)
+                    isAllCaps = false
+                    textSize = 14f
+                    minHeight = dp(48)
+                    minimumWidth = 0
+                    setPadding(dp(2), 0, dp(2), 0)
+                    setOnClickListener { selectTab(index) }
+                }.also { buttons.add(it) }, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+                addView(View(this@SettingsActivity).apply {
+                    setBackgroundColor(accent.data)
+                }.also { indicators.add(it) }, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, dp(3)))
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             addView(toolbar)
-            addView(ScrollView(this@SettingsActivity).apply {
-                addView(content)
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(tabs)
+            pages.forEach { addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)) }
         })
+        selectTab((savedInstanceState?.getInt("selected_tab") ?: 0).coerceIn(pages.indices))
         updateRecordStatus()
         syncRecords()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putInt("selected_tab", selectedTab)
+        super.onSaveInstanceState(outState)
+    }
+
+    private fun settingsPage(content: LinearLayout.() -> Unit) = ScrollView(this).apply {
+        addView(LinearLayout(this@SettingsActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), 0, dp(16), dp(16))
+            content()
+        })
     }
 
     override fun onDestroy() {
@@ -271,26 +330,34 @@ class SettingsActivity : Activity() {
 
     private fun updateRecordStatus(message: Int? = null, busy: Boolean = false, feedback: String? = null) {
         val connected = records.connected
-        val period = records.period
-        val syncedAt = records.syncedAt(period)
+        val periods = records.periods
+        fun periodTitle(period: String) = getString(if (period == "42d")
+            R.string.comparison_42_days else R.string.records_season_short)
         connectButton.visibility = if (connected) View.GONE else View.VISIBLE
         connectButton.isEnabled = !busy
         recordDetails.visibility = if (connected) View.VISIBLE else View.GONE
         syncButton.isEnabled = !busy
         disconnectButton.isEnabled = !busy
+        val showConnected = connected && message != R.string.records_key_rejected
+        recordStatus.setTextColor(if (showConnected)
+            ColorStateList.valueOf(getColor(R.color.connected_status)) else defaultRecordStatusColors)
         recordStatus.text = when {
-            !connected -> getString(R.string.records_not_connected)
+            !showConnected -> getString(R.string.records_not_connected)
             records.accountName != null -> getString(R.string.records_connected_as, records.accountName)
             else -> getString(R.string.records_connected)
         }
         recordFeedback.text = feedback ?: message?.let { getString(it) }.orEmpty()
         recordFeedback.visibility = if (recordFeedback.text.isEmpty()) View.GONE else View.VISIBLE
-        recordDates.text = if (syncedAt == 0L) getString(R.string.records_pending) else Date(syncedAt).let {
-            getString(R.string.records_last_sync,
-                DateFormat.getDateFormat(this).format(it), DateFormat.getTimeFormat(this).format(it))
+        recordDates.text = periods.joinToString("\n") { period ->
+            val syncedAt = records.syncedAt(period)
+            val detail = if (syncedAt == 0L) getString(R.string.records_pending) else Date(syncedAt).let {
+                getString(R.string.records_last_sync,
+                    DateFormat.getDateFormat(this).format(it), DateFormat.getTimeFormat(this).format(it))
+            }
+            if (periods.size > 1) "${periodTitle(period)} · $detail" else detail
         }
         recordValues.removeAllViews()
-        if (syncedAt == 0L) return
+        if (periods.none { records.syncedAt(it) > 0 }) return
         val durations = if (prefs.getBoolean(RECORD_HEART, false)) powerDurations + HEART_RECORD else powerDurations
         for (duration in durations) {
             val title = when (duration) {
@@ -298,11 +365,14 @@ class SettingsActivity : Activity() {
                 1, 5 -> getString(R.string.records_seconds, duration)
                 else -> getString(R.string.records_minutes, duration / 60)
             }
-            val value = records.reference(period, duration)
-            val valueText = when {
-                value == null -> getString(R.string.records_no_value)
-                duration == HEART_RECORD -> getString(R.string.records_bpm, value)
-                else -> getString(R.string.records_watts, value)
+            val valueText = periods.joinToString("\n") { period ->
+                val value = records.reference(period, duration)
+                val text = when {
+                    value == null -> getString(R.string.records_no_value)
+                    duration == HEART_RECORD -> getString(R.string.records_bpm, value)
+                    else -> getString(R.string.records_watts, value)
+                }
+                if (periods.size > 1) "${periodTitle(period)} · $text" else text
             }
             recordValues.addView(LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL

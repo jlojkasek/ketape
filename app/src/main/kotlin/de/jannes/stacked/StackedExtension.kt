@@ -37,7 +37,7 @@ private val stacks = listOf(
 class StackedExtension : KarooExtension("stacked-fields", BuildConfig.VERSION_NAME) {
     private val system by lazy { KarooSystemService(this) }
     private val recordMonitor by lazy { RideRecordMonitor(this, system) }
-    override val types: List<DataTypeImpl> by lazy { stacks.map { StackedType(system, it, recordMonitor) } }
+    override val types: List<DataTypeImpl> by lazy { stacks.map { StackedType(system, it, recordMonitor) } + BestComparisonType(recordMonitor) }
 
     override fun onCreate() {
         super.onCreate()

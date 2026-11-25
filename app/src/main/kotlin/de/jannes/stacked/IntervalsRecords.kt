@@ -29,7 +29,11 @@ internal class IntervalsRecords(context: Context) {
     private val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
     val connected: Boolean get() = prefs.contains(API_KEY)
     val accountName: String? get() = prefs.getString(ACCOUNT_NAME, null)
-    val period: String get() = if (prefs.getString(RECORD_PERIOD, "s0") == "42d") "42d" else "s0"
+    val periods: List<String> get() = when (prefs.getString(RECORD_PERIOD, "s0")) {
+        "both" -> listOf("s0", "42d")
+        "42d" -> listOf("42d")
+        else -> listOf("s0")
+    }
 
     suspend fun connect(apiKey: String) = withContext(Dispatchers.IO) {
         mutex.withLock {
@@ -51,7 +55,7 @@ internal class IntervalsRecords(context: Context) {
         return editor
     }
 
-    fun syncedAt(period: String = this.period): Long = prefs.getLong("intervals_cache_${period}_at", 0)
+    fun syncedAt(period: String): Long = prefs.getLong("intervals_cache_${period}_at", 0)
     fun reference(period: String, duration: Int): Int? =
         prefs.getInt("intervals_cache_${period}_$duration", 0).takeIf { it > 0 }
 
@@ -66,12 +70,15 @@ internal class IntervalsRecords(context: Context) {
         prefs.edit().putInt(key, best.value).putLong("${key}_at", System.currentTimeMillis()).apply()
     }
 
-    suspend fun sync(force: Boolean = false, period: String = this.period) = withContext(Dispatchers.IO) {
+    suspend fun sync(force: Boolean = false, periods: List<String> = this.periods) = withContext(Dispatchers.IO) {
         mutex.withLock {
             val now = System.currentTimeMillis()
-            if (!force && now - syncedAt(period) in 0 until DAY_MS) return@withLock
+            val due = periods.filter { force || now - syncedAt(it) !in 0 until DAY_MS }
+            if (due.isEmpty()) return@withLock
             val apiKey = readApiKey() ?: return@withLock
-            storeBestValues(prefs.edit(), period, now, fetchBestValues(apiKey, period))
+            for (period in due) {
+                storeBestValues(prefs.edit(), period, now, fetchBestValues(apiKey, period))
+            }
         }
     }
 

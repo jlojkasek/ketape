@@ -6,4 +6,5 @@
   <DataType typeId="speed" displayName="@string/field_4" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="distance" displayName="@string/field_5" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="cadence" displayName="@string/field_6" description="@string/field_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="best-comparison" displayName="@string/best_comparison" description="@string/best_comparison_description" graphical="true" icon="@drawable/ic_stacked" />
 </ExtensionInfo>

@@ -15,20 +15,23 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val rideValues = RideBestValues()
-    private val rideBests = mutableMapOf<Int, Int>()
+    @Volatile private var rideBests = emptyMap<Int, Int>()
     private val announced = mutableSetOf<Int>()
     private val pending = mutableListOf<RideBest>()
     private val metrics = mutableListOf<String>()
     private var stateConsumer: String? = null
     private var lastHeartReading: Long? = null
-    private var rideState: RideState = RideState.Idle
-    private var period = records.period
+    @Volatile private var rideState: RideState = RideState.Idle
+    @Volatile private var periods = records.periods
     private var power: Reading? = null
     private var heart: Reading? = null
     @Volatile private var notices = emptyMap<Boolean, Notice>()
 
     private data class Reading(val value: Double, val at: Long)
     private data class Notice(val best: RideBest, val expiresAt: Long)
+
+    fun rideBestSnapshot(): Map<Int, Int> = rideBests
+    fun comparisonPeriods(): List<String> = if (rideState == RideState.Idle) records.periods else periods
 
     fun current(power: Boolean): RideBest? =
         notices[power]?.takeIf { records.connected }?.takeIf { SystemClock.elapsedRealtime() < it.expiresAt }?.best
@@ -40,7 +43,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         scope.launch {
             while (isActive) {
                 val now = SystemClock.elapsedRealtime()
-                if (rideState == RideState.Recording && records.connected && records.syncedAt(period) > 0) {
+                if (rideState == RideState.Recording) {
                     val watts = power?.takeIf { now - it.at <= 1500 }?.value
                     val bpm = heart?.takeIf { now - it.at <= 1500 && it.at != lastHeartReading }
                     lastHeartReading = heart?.at
@@ -55,12 +58,12 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private fun onRideState(state: RideState) {
         if (state == rideState) return
         if (rideState == RideState.Idle) {
-            period = records.period
-            val ridePeriod = period
+            periods = records.periods
+            val ridePeriods = periods
             if (records.connected) {
                 scope.launch {
                     try {
-                        records.sync(period = ridePeriod)
+                        records.sync(periods = ridePeriods)
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (_: Exception) {
@@ -76,14 +79,14 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         lastHeartReading = null
         metrics.forEach(system::removeConsumer)
         metrics.clear()
-        if (state == RideState.Recording && records.connected) {
+        if (state == RideState.Recording) {
             metrics += subscribe(DataType.Type.POWER) { power = it }
             if (prefs.getBoolean(RECORD_HEART, false)) {
                 metrics += subscribe(DataType.Type.HEART_RATE) { heart = it }
             }
         }
         if (state == RideState.Idle) {
-            rideBests.clear()
+            rideBests = emptyMap()
             announced.clear()
             pending.clear()
             notices = emptyMap()
@@ -100,11 +103,15 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private fun checkRecords(values: List<RideBest>) {
         for (best in values) {
             if (best.duration == HEART_RECORD && !prefs.getBoolean(RECORD_HEART, false)) continue
-            val reference = records.reference(period, best.duration) ?: continue
-            val previous = maxOf(reference, records.recentBest(period, best.duration), rideBests[best.duration] ?: 0)
-            if (best.value <= previous) continue
-            rideBests[best.duration] = best.value
-            records.saveBest(period, best)
+            if (best.value <= (rideBests[best.duration] ?: -1)) continue
+            rideBests = rideBests + (best.duration to best.value)
+            if (!records.connected) continue
+            val beatenPeriods = periods.filter { period ->
+                val reference = records.reference(period, best.duration)
+                reference != null && best.value > maxOf(reference, records.recentBest(period, best.duration))
+            }
+            if (beatenPeriods.isEmpty()) continue
+            beatenPeriods.forEach { records.saveBest(it, best) }
             if (announced.add(best.duration)) {
                 pending.add(best)
             } else {

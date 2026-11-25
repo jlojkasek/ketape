@@ -52,8 +52,8 @@
   <string name="records_key_rejected">Intervals.icu hat den API-Schlüssel abgelehnt. Prüfe ihn und versuche es erneut.</string>
   <string name="records_period">Vergleichszeitraum</string>
   <string name="records_saved_values">Synchronisierte Bestwerte</string>
-  <string name="records_connected">Mit Intervals.icu verbunden</string>
-  <string name="records_connected_as">Verbunden als %1$s</string>
+  <string name="records_connected">Mit Intervals.icu verbunden ✓</string>
+  <string name="records_connected_as">Verbunden als %1$s ✓</string>
   <string name="records_disconnect_detail">Gespeicherten API-Schlüssel und synchronisierte Bestwerte von diesem Karoo entfernen?</string>
   <string name="records_http_error">Intervals.icu konnte die Daten nicht synchronisieren (HTTP %1$d).</string>
   <string name="records_data_error">Intervals.icu hat ein unerwartetes Datenformat geliefert.</string>
@@ -64,4 +64,16 @@
   <string name="records_watts">%1$d W</string>
   <string name="records_bpm">%1$d bpm</string>
   <string name="records_no_value">Kein Wert</string>
+  <string name="best_comparison">Power Best</string>
+  <string name="best_comparison_description">Fahrtbestwerte links neben der Intervals.icu-Referenz. Bei wenig Platz wechseln die angezeigten Dauern.</string>
+  <string name="comparison_best">Bestwert</string>
+  <string name="comparison_ride">Fahrt</string>
+  <string name="comparison_42_days">42 Tage</string>
+  <string name="records_season_short">Saison</string>
+  <string name="comparison_heart">HF max</string>
+  <string name="comparison_accessible_ride">Fahrtbestwert %1$s</string>
+  <string name="comparison_accessible_reference">Referenz %1$s %2$s</string>
+  <string name="records_both">Beide Zeiträume</string>
+  <string name="settings_tab_display">Anzeige</string>
+  <string name="settings_tab_about">Info</string>
 </resources>

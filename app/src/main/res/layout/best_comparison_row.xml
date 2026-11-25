@@ -1,0 +1,28 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:orientation="horizontal">
+    <TextView
+        android:id="@+id/comparison_metric"
+        style="@style/ComparisonCell"
+        android:gravity="center_vertical|start"
+        android:layout_weight="1" />
+    <TextView
+        android:id="@+id/comparison_ride"
+        style="@style/ComparisonCell"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:layout_weight="1.25" />
+    <TextView
+        android:id="@+id/comparison_reference"
+        style="@style/ComparisonCell"
+        android:gravity="center_vertical|end"
+        android:layout_weight="1.25" />
+    <TextView
+        android:id="@+id/comparison_second_reference"
+        style="@style/ComparisonCell"
+        android:gravity="center_vertical|end"
+        android:layout_weight="1.25"
+        android:visibility="gone" />
+</LinearLayout>
