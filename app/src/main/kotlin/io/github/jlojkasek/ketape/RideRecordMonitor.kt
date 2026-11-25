@@ -2,6 +2,7 @@ package io.github.jlojkasek.ketape
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ActiveRideProfile
 import io.hammerhead.karooext.models.DataType
@@ -72,16 +73,27 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         if (!idleConfirmed || !records.connected || idleSync?.isActive == true) return
         if (lastIdleSyncAttempt?.let { now - it < 15 * 60 * 1000L } == true) return
         lastIdleSyncAttempt = now
-        idleSync = scope.launch { syncReferences() }
+        idleSync = scope.launch {
+            val periods = records.periods
+            val before = periods.map(records::syncedAt)
+            val success = syncReferences(periods)
+            when {
+                !success -> Log.i("KetapePalmares", "Idle sync failed; cached values retained")
+                periods.map(records::syncedAt) != before -> Log.i("KetapePalmares", "Idle sync refreshed references")
+                else -> Log.d("KetapePalmares", "Idle sync checked; no references refreshed")
+            }
+        }
     }
 
-    private suspend fun syncReferences(periods: List<String> = records.periods) {
-        try {
+    private suspend fun syncReferences(periods: List<String>): Boolean {
+        return try {
             records.sync(periods = periods)
+            true
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
             // Keep cached references when Intervals.icu is unavailable.
+            false
         }
     }
 
