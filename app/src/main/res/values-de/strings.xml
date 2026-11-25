@@ -92,4 +92,5 @@
   <string name="power_best_description">Fahrtbestwert und Intervals.icu-Referenzen in einem kompakten Feld, das durch deine gewählten Dauern wechselt.</string>
   <string name="records_detail">Vergleiche deine Fahrtbestwerte mit der Saison, den letzten 42 Tagen oder beiden Zeiträumen. Verbinde Intervals.icu, um deine Referenzwerte zu laden.</string>
   <string name="stacked_fields_name">Stacked Fields</string>
+  <string name="records_hide_api_key">API-Schlüssel ausblenden</string>
 </resources>

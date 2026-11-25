@@ -92,4 +92,5 @@
   <string name="power_best_description">See your ride best and Intervals.icu benchmarks in a compact field that cycles through your chosen durations.</string>
   <string name="records_detail">Compare your ride bests with your season, the last 42 days, or both. Connect Intervals.icu to get your benchmarks.</string>
   <string name="stacked_fields_name">Stacked Fields</string>
+  <string name="records_hide_api_key">Hide API key</string>
 </resources>

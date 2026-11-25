@@ -13,7 +13,6 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -333,15 +332,24 @@ class SettingsActivity : Activity() {
                 importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
             }
         }
-        val showKey = CheckBox(this).apply {
-            setText(R.string.records_show_api_key)
-            setOnCheckedChangeListener { _, visible ->
+        var keyVisible = false
+        val toggleVisibility = ImageButton(this, null, android.R.attr.borderlessButtonStyle).apply {
+            imageTintList = input.textColors
+            fun updateIcon() {
+                setImageResource(if (keyVisible) R.drawable.ic_key_visible else R.drawable.ic_key_hidden)
+                contentDescription = getString(if (keyVisible)
+                    R.string.records_hide_api_key else R.string.records_show_api_key)
+            }
+            updateIcon()
+            setOnClickListener {
+                keyVisible = !keyVisible
                 val start = input.selectionStart.coerceIn(0, input.length())
                 val end = input.selectionEnd.coerceIn(0, input.length())
-                input.setSingleLine(!visible)
-                input.maxLines = if (visible) 4 else 1
-                input.transformationMethod = if (visible) null else PasswordTransformationMethod.getInstance()
+                input.setSingleLine(!keyVisible)
+                input.maxLines = if (keyVisible) 4 else 1
+                input.transformationMethod = if (keyVisible) null else PasswordTransformationMethod.getInstance()
                 input.setSelection(start, end)
+                updateIcon()
             }
         }
         val dialog = AlertDialog.Builder(this)
@@ -350,9 +358,13 @@ class SettingsActivity : Activity() {
             .setView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(24), 0, dp(24), 0)
-                addView(input, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                addView(LinearLayout(this@SettingsActivity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    addView(toggleVisibility, LinearLayout.LayoutParams(dp(48), dp(48)))
+                }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT))
-                addView(showKey)
             })
             .setNegativeButton(R.string.settings_cancel, null)
             .setPositiveButton(R.string.records_connect, null)
