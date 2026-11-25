@@ -34,7 +34,7 @@ private val stacks = listOf(
     Stack("cadence", "TRITTFREQUENZ", "rpm", Metric(DataType.Type.CADENCE), Metric(DataType.Type.AVERAGE_CADENCE), Metric(DataType.Type.MAX_CADENCE))
 )
 
-class StackedExtension : KarooExtension("stacked-fields", "0.1.0") {
+class StackedExtension : KarooExtension("stacked-fields", BuildConfig.VERSION_NAME) {
     private val system by lazy { KarooSystemService(this) }
     override val types: List<DataTypeImpl> by lazy { stacks.map { StackedType(system, it) } }
     override fun onCreate() { super.onCreate(); system.connect() }
@@ -102,7 +102,9 @@ private class StackedType(private val system: KarooSystemService, private val st
         scope.launch {
             // Load once per view activation, not in the one-second render loop.
             val systemColors = KarooPalette.load(context)
+            var previewTick = 0
             while (isActive) {
+                val previewFrame = PreviewValues.frame(stack.id, previewTick)
                 val theme = prefs.getString("theme", "auto")
                 val dark = theme == "dark" || (theme == "auto" &&
                     context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES)
@@ -120,11 +122,18 @@ private class StackedType(private val system: KarooSystemService, private val st
                     ViewConfig.Alignment.RIGHT -> android.view.Gravity.RIGHT
                     else -> android.view.Gravity.CENTER_HORIZONTAL
                 } or android.view.Gravity.CENTER_VERTICAL
-                textIds.forEach { view.setInt(it, "setGravity", gravity) }
-                // Let Android fit the final text inside the measured cell, including
-                // icon, unit and zone badge. Fixed sizes compete with native autosizing.
+                view.setInt(R.id.main_row, "setGravity", gravity)
+                // Align the complete group, never the number independently from its unit.
+                listOf(R.id.main, R.id.unit).forEach {
+                    view.setInt(it, "setGravity", android.view.Gravity.CENTER)
+                }
+                // The compact main group is measured below; footer cells keep native autosizing.
                 fun rawValue(metric: Metric, index: Int): Double? =
-                    if (config.preview) demo(metric, index) else {
+                    if (config.preview) when (index) {
+                        0 -> previewFrame.main
+                        1 -> previewFrame.average
+                        else -> previewFrame.secondary
+                    } else {
                         val timestamp = timestamps[metric.type]
                         // Never leave a disconnected sensor's last current value on screen.
                         if (metric == stack.main && timestamp != null && SystemClock.elapsedRealtime() - timestamp > 5000) null
@@ -171,7 +180,10 @@ private class StackedType(private val system: KarooSystemService, private val st
                 view.setImageViewBitmap(R.id.icon, bitmap)
                 view.setContentDescription(R.id.icon, stack.title)
                 view.setTextViewText(R.id.unit, stack.unit)
-                view.setTextViewText(R.id.main, format(mainValue, stack.main.format))
+                val mainText = format(mainValue, stack.main.format)
+                view.setTextViewText(R.id.main, mainText)
+                MainLineLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
+                    config.textSize, mainText, stack.unit)
                 val leftUnit = if (stack.id == "distance") " m" else ""
                 view.setTextViewText(R.id.left, "${stack.leftLabel} ${format(rawValue(stack.left, 1), stack.left.format)}$leftUnit")
                 val right = stack.right
@@ -181,7 +193,7 @@ private class StackedType(private val system: KarooSystemService, private val st
                 } ?: "")
                 if (stack.id == "cadence" && prefs.getBoolean("cadence_balance", false)) {
                     val timestamp = timestamps[balanceType]
-                    val left = if (config.preview) 48.0 else if (timestamp != null &&
+                    val left = if (config.preview) previewFrame.balanceLeft else if (timestamp != null &&
                         SystemClock.elapsedRealtime() - timestamp <= 5000) values[balanceType] else null
                     val balance = pedalBalance(left)
                     view.setTextViewText(R.id.left, "L ${balance?.first?.let { "$it%" } ?: "--"}")
@@ -189,6 +201,7 @@ private class StackedType(private val system: KarooSystemService, private val st
                     view.setViewVisibility(R.id.right, android.view.View.VISIBLE)
                 }
                 emitter.updateView(view)
+                if (config.preview) previewTick++
                 delay(1100) // Karoo permits at most one RemoteViews update per second.
             }
         }
@@ -200,15 +213,7 @@ private class StackedType(private val system: KarooSystemService, private val st
         }
     }
 
-    private fun demo(metric: Metric, index: Int): Double = when(metric.format) {
-        Format.SPEED -> listOf(8.7, 7.8, 15.1)[index]
-        Format.DISTANCE -> 82400.0
-        Format.TIME -> 10800.0
-        Format.INTEGER -> if (stack.id == "distance") (if (index == 1) 1260.0 else 1180.0)
-            else if (stack.id == "heart") listOf(142.0, 136.0, 174.0)[index]
-            else if (stack.id == "cadence") listOf(88.0, 83.0, 112.0)[index]
-            else listOf(243.0, 218.0, 232.0)[index]
-    }
+
 }
 
 private fun format(value: Double?, format: Format): String {

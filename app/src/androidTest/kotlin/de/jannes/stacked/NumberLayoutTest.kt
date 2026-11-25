@@ -21,30 +21,38 @@ class NumberLayoutTest {
         instrumentation.runOnMainSync {
             for (width in listOf(120, 160, 280)) {
                 for (height in listOf(64, 100, 160)) {
-                    for (distance in listOf(false, true)) {
+                    for (metricUnit in listOf("W", "bpm", "km/h", "km", "rpm")) {
+                        val distance = metricUnit == "km"
                         for (badge in listOf(false, true)) {
                             val host = RemoteViews(context.packageName, R.layout.stacked).apply(context, null)
                             var previousMainHeight: Int? = null
                             for (digits in transitions) {
-                                val main = if (distance && digits != "--") "$digits,9" else digits
+                                val main = if ((distance || metricUnit == "km/h") && digits != "--") "$digits,9" else digits
                                 val left = if (distance) "↗ $digits m" else "Ø $digits"
                                 val remote = RemoteViews(context.packageName, R.layout.stacked).apply {
                                     setTextViewText(R.id.main, main)
                                     setTextViewText(R.id.left, left)
                                     setTextViewText(R.id.right, if (distance) "↘ $digits m" else "NP $digits")
-                                    setTextViewText(R.id.unit, if (distance) "km" else "W")
+                                    setTextViewText(R.id.unit, metricUnit)
                                     setViewVisibility(R.id.right, View.VISIBLE)
                                     setTextViewText(R.id.zone, "Z7")
                                     setViewVisibility(R.id.zone, if (badge && !distance) View.VISIBLE else View.GONE)
                                 }
+                                MainLineLayout.apply(context, remote, px(width), px(height), 64,
+                                    main, metricUnit)
                                 remote.reapply(context, host)
                                 host.measure(exact(width), exact(height))
                                 host.layout(0, 0, px(width), px(height))
                                 val label = "$width x $height dp, distance=$distance, badge=$badge, value=$digits"
                                 val mainView = host.findViewById<TextView>(R.id.main)
                                 assertEquals(label, main, mainView.text.toString())
-                                previousMainHeight?.let { assertEquals(label, it, mainView.height) }
-                                previousMainHeight = mainView.height
+                                val row = host.findViewById<View>(R.id.main_row)
+                                previousMainHeight?.let { assertEquals(label, it, row.height) }
+                                previousMainHeight = row.height
+                                val icon = host.findViewById<View>(R.id.icon)
+                                val unit = host.findViewById<TextView>(R.id.unit)
+                                assertTrue("Unit detached from number: $label", unit.left - mainView.right <= px(4) + 1)
+                                assertTrue("Icon detached from number: $label", mainView.left - icon.right <= px(5) + 1)
                                 for (id in listOf(R.id.main, R.id.left, R.id.right, R.id.unit, R.id.zone)) {
                                     val view = host.findViewById<TextView>(id)
                                     if (view.visibility == View.GONE) continue

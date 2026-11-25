@@ -104,7 +104,7 @@ Das Streckenfeld zeigt gefahrene Kilometer groß und darunter links die während
 
 ## Zahlen ohne Zeilenumbruch
 
-Hauptwert, Zusatzwerte, Einheit und Zonenabzeichen sind auf eine Zeile begrenzt. Die Zahlen verwenden tabellarische Ziffern, soweit die Systemschrift das unterstützt. Horizontales Scrollen ist deaktiviert, sodass Android beim Autosizing die tatsächliche Feldbreite berücksichtigt. Haupt- und Zusatzwerte werden bis auf 8 sp verkleinert. Die Zusatzzeile reserviert unabhängig von der Ziffernzahl 20 dp; sie kann keine zusätzliche Zeile aufspannen. Die bisherigen festen Schriftgrößen im Renderloop entfallen, damit Android die verfügbaren Abmessungen nutzen kann. Bei extremem Platzmangel bleibt als letzte Grenze ein sichtbares Auslassungszeichen statt eines Zeilenumbruchs. Beliebig kleine Felder können nicht sämtliche Werte lesbar anzeigen.
+Hauptwert, Zusatzwerte, Einheit und Zonenabzeichen sind auf eine Zeile begrenzt. Die Zahlen verwenden tabellarische Ziffern, soweit die Systemschrift das unterstützt. Horizontales Scrollen ist deaktiviert, sodass Android beim Autosizing die tatsächliche Feldbreite berücksichtigt. Haupt- und Zusatzwerte werden bis auf 8 sp verkleinert. Die Zusatzzeile reserviert unabhängig von der Ziffernzahl 20 dp; sie kann keine zusätzliche Zeile aufspannen. Die Hauptschrift wird passend zum verfügbaren Platz berechnet; Android passt die Zusatzwerte automatisch an. Bei extremem Platzmangel bleibt als letzte Grenze ein sichtbares Auslassungszeichen statt eines Zeilenumbruchs. Beliebig kleine Felder können nicht sämtliche Werte lesbar anzeigen.
 
 `NumberLayoutTest` prüft echte Android-Textlayouts nach wiederholtem `RemoteViews.reapply`: 9 → 10, 99 → 100, 999 → 1000, 9999 → 10000, fehlender Wert und Rückkehr zu zwei Ziffern. Enthalten sind halbe/volle Breiten (120, 160, 280 dp), mehrere Höhen, Strecke mit Nachkommastelle und Höhenmetern sowie eingeblendete Zonenabzeichen. Geprüft werden eine Zeile, vollständiger Text, keine Ellipse, kein horizontales/vertikales Abschneiden und konstante Hauptzeilenhöhe. Ausführen mit `gradle :app:connectedDebugAndroidTest` auf angeschlossenem Karoo oder Android-Emulator. Dieser Gerätetest ist vorbereitet, aber noch nicht auf einem Gerät ausgeführt.
 
@@ -126,4 +126,16 @@ Ohne gültige Balance, bei gemeldeten Null-Watt oder nach fünf Sekunden ohne Ba
 
 Das Repository enthält Quellcode, vendortes Karoo-SDK samt Lizenz, Gradle-Wrapper, Tests, Diagnose-/Installationsskripte und die HTML-Vorschau. Lokale SDK-/JDK-Pfade, Build-Caches, Schlüssel und erzeugte APKs sind ausgeschlossen.
 
-Unter GitHub Actions läuft bei Push und Pull Request sowie manuell der Workflow „Build and checks“: Java 21, Unit-Tests, Android Lint und Debug-APK. Nach erfolgreichem Lauf steht die APK als Workflow-Artefakt `karoo-stacked-fields-debug` bereit. Für manuell installierte APKs und CI-Builds können unterschiedliche Debug-Signaturschlüssel verwendet werden; ein Update über eine anders signierte Installation erfordert deren vorherige Deinstallation. Eine dauerhafte Release-Signierung ist noch nicht eingerichtet.
+Unter GitHub Actions läuft bei Push und Pull Request sowie manuell der Workflow „Build and checks“: Java 21, Unit-Tests, Android Lint und Debug-APK. Nach erfolgreichem Lauf steht die APK als Workflow-Artefakt `karoo-stacked-fields-debug` bereit. Für manuell installierte APKs und CI-Builds können unterschiedliche Debug-Signaturschlüssel verwendet werden; ein Update über eine anders signierte Installation erfordert deren vorherige Deinstallation. Veröffentlichte APKs werden lokal mit dem bestehenden App-Zertifikat signiert.
+
+## Version 0.1.1
+
+Icon, Hauptwert und Einheit bilden jetzt eine kompakte Gruppe. Deren Ausrichtung folgt der Karoo-Feldeinstellung; die Einheit bleibt mit 4 dp Abstand direkt an der Zahl. Die Hauptschrift wird anhand der tatsächlichen Feldabmessungen, Textbreite sowie des Platzes für Icon und Einheit berechnet. Die kleinen Zusatzwerte bleiben in einer festen, einzeiligen Zeile mit eigener Größenanpassung. Das Layout gilt für Leistung, Herzfrequenz, Geschwindigkeit, Strecke und Trittfrequenz.
+
+Im Datenseiten-Editor wechseln die Beispiele etwa alle 2,2 Sekunden. Die Werte decken Ziffernwechsel, Dezimalzahlen, größere Strecken, Höhenmeter, Leistungs-/HF-Zonen und optional L/R-Verteilung ab. Die Beispieldaten gelten ausschließlich für `ViewConfig.preview`; während einer Fahrt kommen weiterhin echte Karoo-Werte zum Einsatz. Der Layouttest prüft zusätzlich den Abstand zwischen Icon, Zahl und Einheit für W, bpm, km/h, km und rpm. Er läuft sowohl unter Robolectric mit nativer Android-Schriftmessung (API 34) als auch als vorbereiteter Gerätetest.
+
+Version 0.1.1: Build, zwölf Unit-Tests einschließlich 900 Layout-/Wertkombinationen unter Robolectric sowie Lint erfolgreich (null Fehler). APK lokal unter `dist/karoo-stacked-fields-0.1.1-debug.apk`. Die Darstellung auf dem Karoo ist nach Installation des Updates erneut zu prüfen.
+
+## Karoo-Updates ab Version 0.1.2
+
+Die App registriert eine feste Manifest-Adresse beim Karoo. Der Terminalbefehl `python3 scripts/release.py` baut, prüft und veröffentlicht einen getaggten Stand. APK und Manifest erscheinen im separaten öffentlichen Download-Repository. Die Schritte für den nächsten Release stehen in [releases/README.md](releases/README.md).
