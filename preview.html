@@ -29,8 +29,12 @@ function render(){
   if(i<2&&!disconnected&&document.querySelector('#colors').value!=='off'){
    const z=Number(document.querySelector(i===0?'#power-zone':'#heart-zone').value);
    const color=(i===0?powerPalette:heartPalette)[z-1];
-   const badge=document.createElement('span');badge.className='zone';badge.textContent='Z'+z;sub.append(badge);
-   if(document.querySelector('#colors').value==='background'){el.style.background=color;el.style.color=contrast(color)}else{badge.style.background=color;badge.style.color=contrast(color)}
+   if(document.querySelector('#colors').value==='background'){
+    el.style.background=color;el.style.color=contrast(color);
+   }else{
+    const badge=document.createElement('span');badge.className='zone';badge.textContent='Z'+z;
+    badge.style.background=color;badge.style.color=contrast(color);sub.append(badge);
+   }
    value.textContent=i===0?['100','195','243','290','340','410','500'][z-1]:['100','125','142','165','185'][z-1];
   }
   if(digitStep>=0){value.textContent=i===3?digitCases[digitStep]+',9':digitCases[digitStep];

@@ -3,6 +3,17 @@ package de.jannes.stacked
 /** Deterministic editor-only examples. Each step lasts two render ticks. */
 internal object PreviewValues {
     data class Frame(val main: Double, val average: Double, val secondary: Double, val balanceLeft: Double = 48.0)
+    fun record(field: String, tick: Int): RideBest? {
+        // Keep the editor responsive by showing the sample for two render ticks.
+        val step = Math.floorMod(tick, 24)
+        return when {
+            field.startsWith("power-") && step in 4..5 -> RideBest(1, 1000)
+            field.startsWith("power-") && step in 16..17 -> RideBest(300, 328)
+            field == "heart" && step % 12 in 4..5 -> RideBest(HEART_RECORD, 191)
+            else -> null
+        }
+    }
+
     fun frame(field: String, tick: Int): Frame {
         val frames = when {
             field.startsWith("power-") -> listOf(
@@ -22,8 +33,8 @@ internal object PreviewValues {
                 Frame(99900.0, 999.0, 865.0), Frame(100000.0, 1000.0, 890.0),
                 Frame(312000.0, 9999.0, 9845.0), Frame(313000.0, 10000.0, 9900.0))
             else -> listOf(
-                Frame(89.0, 83.0, 98.0, 48.0), Frame(99.0, 84.0, 99.0, 49.0),
-                Frame(100.0, 85.0, 100.0, 50.0), Frame(110.0, 86.0, 110.0, 51.0),
+                Frame(89.0, 83.0, 98.0, 50.0), Frame(99.0, 84.0, 99.0, 49.0),
+                Frame(100.0, 85.0, 100.0, 38.0), Frame(110.0, 86.0, 110.0, 51.0),
                 Frame(76.0, 84.0, 112.0, 52.0), Frame(88.0, 83.0, 112.0, 47.0))
         }
         return frames[Math.floorMod(tick / 2, frames.size)]

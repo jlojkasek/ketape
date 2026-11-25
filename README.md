@@ -139,3 +139,17 @@ Version 0.1.1: Build, zwölf Unit-Tests einschließlich 900 Layout-/Wertkombinat
 ## Karoo-Updates ab Version 0.1.2
 
 Die App registriert eine feste Manifest-Adresse beim Karoo. Der Terminalbefehl `python3 scripts/release.py` baut, prüft und veröffentlicht einen getaggten Stand. APK und Manifest erscheinen im separaten öffentlichen Download-Repository. Die Schritte für den nächsten Release stehen in [releases/README.md](releases/README.md).
+
+## Intervals.icu-Bestwerte
+
+Wähle in den Einstellungen der Erweiterung **Intervals.icu verbinden** und
+gib deinen persönlichen API-Schlüssel aus den Intervals.icu-Entwicklereinstellungen
+ein. Beim ersten Abgleich prüft die App den Schlüssel und speichert ihn danach
+verschlüsselt auf dem Karoo. **Intervals.icu trennen** entfernt den Schlüssel
+und die zwischengespeicherten Bestwerte vom Gerät. Den Schlüssel selbst kannst
+du in Intervals.icu widerrufen oder neu erzeugen.
+
+Die Erweiterung liest Rad-Bestwerte über die Intervals.icu-API und speichert die
+Vergleichswerte auf dem Karoo. Für die Auswertung stehen aktuelle Saison und
+letzte 42 Tage zur Wahl. Erfasst werden 1 s, 5 s, 1 min, 5 min und 20 min Leistung
+sowie optional der maximale Puls.

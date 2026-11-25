@@ -31,4 +31,24 @@ class PreviewValuesTest {
         assertTrue(cadence.map { it.balanceLeft }.distinct().size > 1)
         assertTrue(cadence.any { it.main == 99.0 } && cadence.any { it.main == 100.0 })
     }
+
+    @Test fun recordExamplesAppearAndReturnToNormal() {
+        fields.filter { it.startsWith("power-") }.forEach { field ->
+            assertNull(PreviewValues.record(field, 3))
+            assertEquals(RideBest(1, 1000), PreviewValues.record(field, 4))
+            assertNull(PreviewValues.record(field, 6))
+            assertEquals(RideBest(300, 328), PreviewValues.record(field, 16))
+        }
+        assertEquals(RideBest(HEART_RECORD, 191), PreviewValues.record("heart", 4))
+        assertNull(PreviewValues.record("heart", 6))
+        assertNull(PreviewValues.record("cadence", 4))
+    }
+
+    @Test fun balancePreviewExercisesEveryEnabledWarningThreshold() {
+        val frames = (0..5).map { pedalBalance(PreviewValues.frame("cadence", it).balanceLeft) }
+        balanceWarningThresholds.filter { it > 0 }.forEach { threshold ->
+            assertTrue(frames.any { exceedsBalanceThreshold(it, threshold) })
+            assertTrue(frames.any { !exceedsBalanceThreshold(it, threshold) })
+        }
+    }
 }

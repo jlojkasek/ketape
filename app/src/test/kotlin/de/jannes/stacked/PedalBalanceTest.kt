@@ -18,4 +18,13 @@ class PedalBalanceTest {
             assertNull(pedalBalance(it))
         }
     }
+
+    @Test fun warningRequiresAnEnabledThresholdAndExceedsItOnEitherSide() {
+        assertFalse(exceedsBalanceThreshold(null, 5))
+        assertFalse(exceedsBalanceThreshold(pedalBalance(44.0), 0))
+        assertFalse(exceedsBalanceThreshold(pedalBalance(45.0), 5))
+        assertFalse(exceedsBalanceThreshold(pedalBalance(55.0), 5))
+        assertTrue(exceedsBalanceThreshold(pedalBalance(44.0), 5))
+        assertTrue(exceedsBalanceThreshold(pedalBalance(56.0), 5))
+    }
 }
