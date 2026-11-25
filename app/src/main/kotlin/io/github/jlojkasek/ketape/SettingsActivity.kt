@@ -238,7 +238,8 @@ class SettingsActivity : Activity() {
                     setText(title)
                     isAllCaps = false
                     textSize = 14f
-                    setSingleLine(true)
+                    maxLines = 1
+                    setHorizontallyScrolling(false)
                     ellipsize = TextUtils.TruncateAt.END
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         setAutoSizeTextTypeUniformWithConfiguration(11, 14, 1, TypedValue.COMPLEX_UNIT_SP)
