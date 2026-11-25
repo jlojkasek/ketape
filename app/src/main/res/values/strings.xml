@@ -1,0 +1,11 @@
+<resources>
+  <string name="app_name">Stacked Fields</string>
+  <string name="field_0">Leistung 1 s</string>
+  <string name="field_1">Leistung 3 s</string>
+  <string name="field_2">Leistung 5 s</string>
+  <string name="field_3">Herzfrequenz</string>
+  <string name="field_4">Geschwindigkeit</string>
+  <string name="field_5">Strecke</string>
+  <string name="field_6">Trittfrequenz</string>
+  <string name="field_description">Großer Hauptwert mit zwei Fahrtwerten</string>
+</resources>
