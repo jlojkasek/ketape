@@ -11,7 +11,7 @@ internal class ReservePreferences(context: Context) {
     val graph get() = prefs.getInt("reserve_graph", 5).takeIf { it in listOf(3, 5, 10, 15) } ?: 5
     val colors get() = prefs.getBoolean("reserve_colors", true)
     val threshold get() = prefs.getInt("reserve_threshold", 20).coerceIn(5, 50)
-    fun displayKey(): List<Any?> = listOf(average, graph, colors, threshold, prefs.getString("theme", "auto"))
+    fun displayKey(): List<Any?> = listOf(average, graph, colors, threshold)
     val syncedAt get() = prefs.getLong("intervals_cache_reserve_at", 0)
     private val sportSettings get() = prefs.getString("intervals_cache_reserve_settings", null)
         ?.let { runCatching { JSONObject(it) }.getOrNull() }

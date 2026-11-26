@@ -1,18 +1,76 @@
 package io.github.jlojkasek.ketape
 
+import android.app.AlertDialog
+import android.content.Context
+import android.os.Looper
 import android.view.View
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.RemoteViews
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlertDialog
 
 @RunWith(RobolectricTestRunner::class)
 class BestComparisonTest {
     private val durations = defaultPowerDurations
+
+    @Test fun comparisonPeriodsSupportEveryPairAndPreserveLegacySettings() {
+        fun selected(stored: String?) = ComparisonPeriod.selected(stored).map { it.id }
+        assertEquals(listOf("s0"), selected(null))
+        assertEquals(listOf("42d"), selected("42d"))
+        assertEquals(listOf("s0", "42d"), selected("both"))
+        assertEquals(listOf("s0", "all"), selected("all,s0"))
+        assertEquals(listOf("42d", "all"), selected("42d,all"))
+        assertEquals(2, selected("s0,42d,all").size)
+    }
+
+    @Test fun comparisonPeriodDialogPreventsEmptyOrThirdSelectionAndSavesOnlyOnApply() {
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java).setup()
+        val activity = controller.get()
+        val prefs = activity.getSharedPreferences("stacked", Context.MODE_PRIVATE)
+        fun button(text: String): Button {
+            val matches = arrayListOf<View>()
+            activity.findViewById<View>(android.R.id.content)
+                .findViewsWithText(matches, text, View.FIND_VIEWS_WITH_TEXT)
+            return matches.filterIsInstance<Button>().single()
+        }
+        button(activity.getString(R.string.best_comparison)).performClick()
+        val summary = button(activity.getString(R.string.records_period_value,
+            activity.getString(R.string.records_season_short)))
+        summary.performClick()
+        val dialog = ShadowAlertDialog.getLatestAlertDialog()
+        val list = dialog.listView
+        repeat(list.adapter.count) { list.adapter.getView(it, null, list) }
+        assertTrue(list.isItemChecked(0))
+        fun toggle(index: Int) {
+            list.performItemClick(View(activity), index, list.adapter.getItemId(index))
+        }
+        toggle(0)
+        assertFalse(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
+        toggle(1)
+        toggle(2)
+        toggle(0)
+        assertFalse(list.isItemChecked(0))
+        assertTrue(list.isItemChecked(1))
+        assertTrue(list.isItemChecked(2))
+        assertFalse(prefs.contains(RECORD_PERIOD))
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals("42d,all", prefs.getString(RECORD_PERIOD, null))
+        assertEquals(activity.getString(R.string.records_period_value,
+            listOf(R.string.comparison_42_days, R.string.records_all_time)
+                .joinToString(" · ") { activity.getString(it) }), summary.text.toString())
+        controller.pause().stop().destroy()
+    }
 
     @Test fun selectedDurationsKeepTheirOrderAndFallBackToAll() {
         assertEquals(listOf(5, 1200), selectedPowerDurations(setOf("1200", "invalid", "5")))

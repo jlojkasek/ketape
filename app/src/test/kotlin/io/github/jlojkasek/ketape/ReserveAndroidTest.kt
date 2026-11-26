@@ -1,6 +1,8 @@
 package io.github.jlojkasek.ketape
 
 import android.content.Context
+import android.content.res.Configuration
+import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -106,9 +108,24 @@ class ReserveAndroidTest {
         val before = settings.displayKey()
         settings.prefs.edit().putBoolean("reserve_colors", !settings.colors).commit()
         assertNotEquals(before, settings.displayKey())
-        val colored = settings.displayKey()
-        settings.prefs.edit().putString("theme", "dark").commit()
-        assertNotEquals(colored, settings.displayKey())
+    }
+
+    @Test fun reserveColorsFollowSystemModeEvenWithAnOldThemeOverride() {
+        val settings = ReservePreferences(context)
+        val config = ViewConfig(60 to 15, 226 to 82, 24)
+        fun checkMode(mode: Int, previousTheme: String, textColor: Int, backgroundColor: Int) {
+            val configuration = Configuration(context.resources.configuration).apply {
+                uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or mode
+            }
+            val themed = context.createConfigurationContext(configuration)
+            settings.prefs.edit().putString("theme", previousTheme).commit()
+            val field = ReserveRenderer(themed, config, settings)
+                .render(ReserveField.BALANCE, ReserveSnapshot()).apply(themed, null)
+            assertEquals(textColor, field.findViewById<TextView>(R.id.reserve_text).currentTextColor)
+            assertEquals(backgroundColor, themed.getColor(R.color.background))
+        }
+        checkMode(Configuration.UI_MODE_NIGHT_NO, "dark", Color.rgb(17, 17, 17), Color.WHITE)
+        checkMode(Configuration.UI_MODE_NIGHT_YES, "light", Color.WHITE, Color.BLACK)
     }
 
     private fun exact(value: Int) = View.MeasureSpec.makeMeasureSpec(value, View.MeasureSpec.EXACTLY)

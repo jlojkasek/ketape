@@ -31,14 +31,17 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private val continuity = RideContinuity()
     val incompleteRide: Boolean get() = continuity.incomplete
     @Volatile private var rideBests = emptyMap<Int, Int>()
+    @Volatile private var tableRecords = TableRecords()
+    private var lastTableBests = rideBests
+    private var lastTableReferences: Triple<String?, Long, Long>? = null
     private val announced = mutableSetOf<Int>()
     private val pending = mutableListOf<RideBest>()
     private val metrics = mutableListOf<String>()
     private var profileConsumer: String? = null
     private var stateConsumer: String? = null
     private var idleConfirmed = false
-    private var lastIdleSyncAttempt: Long? = null
-    private var idleSync: Job? = null
+    private var nextAutomaticSyncAt = 0L
+    private var automaticSync: Job? = null
     private var lastHeartReading: Long? = null
     @Volatile private var rideState: RideState = RideState.Idle
     @Volatile private var periods = records.periods
@@ -48,9 +51,11 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
 
     private data class Reading(val value: Double, val at: Long, val source: String?)
     private data class Notice(val best: RideBest, val expiresAt: Long)
+    private data class TableRecords(val account: String? = null, val marks: Map<Int, PowerRecordMark> = emptyMap())
 
     fun rideBestSnapshot(): Map<Int, Int> = rideBests
-    fun comparisonPeriods(): List<String> = if (rideState == RideState.Idle) records.periods else periods
+    fun tableRecordSnapshot(): Map<Int, PowerRecordMark> =
+        tableRecords.let { if (it.account == records.accountId) it.marks else emptyMap() }
 
     fun current(power: Boolean): RideBest? =
         notices[power]?.takeIf { records.connected }?.takeIf { SystemClock.elapsedRealtime() < it.expiresAt }?.best
@@ -81,40 +86,34 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
                     val bpm = freshHeart?.takeIf { it.at != lastHeartReading }
                     lastHeartReading = heart?.at
                     checkRecords(rideValues.sample(now / 1000, watts, bpm?.value?.takeIf { prefs.getBoolean(RECORD_HEART, false) }))
+                    updateTableRecords()
                 }
                 if (rideState != RideState.Idle && records.connected) showPending(now)
-                syncWhileIdle(now)
+                if (idleConfirmed) syncAutomatically(now)
                 reserve.tick()
                 delay(1000 - (SystemClock.elapsedRealtime() % 1000))
             }
         }
     }
 
-    private fun syncWhileIdle(now: Long) {
-        if (!idleConfirmed || !records.connected || idleSync?.isActive == true) return
-        if (lastIdleSyncAttempt?.let { now - it < 15 * 60 * 1000L } == true) return
-        lastIdleSyncAttempt = now
-        idleSync = scope.launch {
+    private fun syncAutomatically(now: Long) {
+        if (now < nextAutomaticSyncAt || !records.connected || records.keyRejected ||
+            automaticSync?.isActive == true) return
+        nextAutomaticSyncAt = now + INTERVALS_IDLE_CHECK_MS
+        automaticSync = scope.launch {
             val periods = records.periods
             val before = periods.map(records::syncedAt)
-            val success = syncReferences(periods)
-            when {
-                !success -> Log.i("KetapePalmares", "Idle sync failed; cached values retained")
-                periods.map(records::syncedAt) != before -> Log.i("KetapePalmares", "Idle sync refreshed references")
-                else -> Log.d("KetapePalmares", "Idle sync checked; no references refreshed")
+            try {
+                records.sync(periods = periods)
+                if (periods.map(records::syncedAt) != before) {
+                    Log.i("KetapePalmares", "Automatic sync refreshed references")
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                nextAutomaticSyncAt = SystemClock.elapsedRealtime() + INTERVALS_SYNC_INTERVAL_MS
+                Log.i("KetapePalmares", "Automatic sync failed; cached values retained")
             }
-        }
-    }
-
-    private suspend fun syncReferences(periods: List<String>): Boolean {
-        return try {
-            records.sync(periods = periods)
-            true
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Exception) {
-            // Keep cached references when Intervals.icu is unavailable.
-            false
         }
     }
 
@@ -125,10 +124,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         if (state == rideState) return
         if (rideState == RideState.Idle) {
             periods = records.periods
-            val ridePeriods = periods
-            if (records.connected) {
-                scope.launch { syncReferences(ridePeriods) }
-            }
+            syncAutomatically(SystemClock.elapsedRealtime())
         }
         rideState = state
         rideValues.reset()
@@ -149,6 +145,9 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
             metrics += subscribe(DataType.Type.AVERAGE_HR) { averageHeartRate = it?.value }
         }
         if (state == RideState.Idle) {
+            tableRecords.account?.let { records.saveTableRecords(it, tableRecords.marks, rideBests) }
+            tableRecords = TableRecords()
+            lastTableReferences = null
             enduranceRatio = null
             endurance = EnduranceMetrics()
             enduranceSnapshot = EnduranceSnapshot()
@@ -157,6 +156,23 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
             pending.clear()
             notices = emptyMap()
         }
+    }
+
+    private fun updateTableRecords() {
+        val account = records.accountId ?: return
+        val references = Triple(account, records.syncedAt(RECENT_POWER_PERIOD), records.syncedAt(ALL_TIME_POWER_PERIOD))
+        val bests = rideBests
+        if (lastTableBests === bests && lastTableReferences == references) return
+        val existing = tableRecords.takeIf { it.account == account }?.marks.orEmpty()
+        val marks = bests.mapNotNull { (duration, value) ->
+            if (duration == HEART_RECORD) null else powerRecordMark(
+                value, records.tableRecordReference(RECENT_POWER_PERIOD, duration),
+                records.tableRecordReference(ALL_TIME_POWER_PERIOD, duration), existing[duration]
+            )?.let { duration to it }
+        }.toMap()
+        tableRecords = TableRecords(account, marks)
+        lastTableBests = bests
+        lastTableReferences = references
     }
 
     private fun subscribe(type: String, update: (Reading?) -> Unit): String =

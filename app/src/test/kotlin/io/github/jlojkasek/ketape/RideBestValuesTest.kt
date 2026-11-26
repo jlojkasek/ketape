@@ -4,6 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class RideBestValuesTest {
+    @Test fun tableRecordMarksRequireAnImprovementAndAllTimeTakesPriority() {
+        assertNull(powerRecordMark(430, recent = 430, allTime = 500, previous = null))
+        assertNull(powerRecordMark(550, recent = null, allTime = null, previous = null))
+        assertEquals(PowerRecordMark.RECENT, powerRecordMark(480, 430, 500, null))
+        assertEquals(PowerRecordMark.ALL_TIME, powerRecordMark(510, 430, 500, PowerRecordMark.RECENT))
+        assertEquals(PowerRecordMark.ALL_TIME, powerRecordMark(520, null, null, PowerRecordMark.ALL_TIME))
+        assertNull(powerRecordMark(520, 520, 520, null))
+    }
+
     @Test fun peakAndRollingWindowsIncludeCoasting() {
         val recorder = RideBestValues()
         assertEquals(listOf(RideBest(1, 800)), recorder.sample(0, 800.0, null))

@@ -1,13 +1,11 @@
 <resources>
   <string name="ride_since_restart">Since restart: %1$s</string>
-  <string name="ride_continuity_help">An asterisk (*) marks ride bests recorded only since the extension restarted. Earlier efforts are unavailable. A dagger (†) marks references older than 48 hours; sync in Palmarès.</string>
+  <string name="ride_continuity_help">* means the ride best only covers efforts since the extension restarted. † marks references older than 48 hours. S means season, 42 means the last 42 days, and A means all time.</string>
   <string name="reserve_edit_manual">Edit manual parameters</string>
   <string name="reserve_sync">Sync with Intervals.icu</string>
   <string name="reserve_source_manual">Parameter source · Manual</string>
   <string name="reserve_source_intervals">Parameter source · Intervals.icu</string>
   <string name="reserve_no_parameters">No valid parameters for the selected source</string>
-  <string name="reserve_cached">Stored Intervals.icu values · FTP %1$.0f W · %2$.1f kJ</string>
-  <string name="reserve_no_cache">No Intervals.icu parameters stored</string>
   <string name="reserve_never">Never</string>
   <string name="reserve_model">Model · Skiba differential</string>
   <string name="reserve_synced_at">Last synced · %1$s</string>
@@ -16,12 +14,11 @@
   <string name="reserve_cp_input">Critical power (W)</string>
   <string name="reserve_capacity_input">W′ capacity (kJ)</string>
   <string name="reserve_manual_parameters">Manual power parameters</string>
-  <string name="reserve_save">Save</string>
   <string name="reserve_cp_error">Enter 30 to 800 W</string>
   <string name="reserve_capacity_error">Enter 1 to 100 kJ</string>
   <string name="reserve_syncing">Syncing…</string>
   <string name="reserve_synced">Power parameters synced</string>
-  <string name="reserve_key_rejected">API key rejected. Reconnect in General.</string>
+  <string name="reserve_key_rejected">Intervals.icu rejected the API key. Update it under General.</string>
   <string name="reserve_http_error">Intervals.icu returned HTTP %1$d. Stored values are still available.</string>
   <string name="reserve_sync_error">Could not sync. Check the connection and try again.</string>
   <string name="reserve_display">Display settings</string>
@@ -60,4 +57,7 @@
   <string name="reserve_reset_confirm">Restart at full capacity and clear the model statistics for this ride? Only do this if you want a new estimate. This does not restore missing ride data.</string>
   <string name="reserve_reset_requested">Reset requested. Open a ride field to see the result.</string>
   <string name="reserve_option_value">%1$s · %2$d%3$s</string>
+  <string name="reserve_manual_values">CP %1$.0f W · W′ %2$.1f kJ</string>
+  <string name="reserve_ftp_values">FTP %1$.0f W · W′ %2$.1f kJ</string>
+  <string name="reserve_indoor_ftp">Indoor FTP %1$.0f W</string>
 </resources>

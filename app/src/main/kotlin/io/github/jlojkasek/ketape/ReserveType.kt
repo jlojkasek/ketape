@@ -1,7 +1,6 @@
 package io.github.jlojkasek.ketape
 
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -77,11 +76,9 @@ internal class ReserveRenderer(private val context: Context, config: ViewConfig,
         height >= 71 && width >= 125 -> 1
         else -> 0
     }
-    private val theme = settings.prefs.getString("theme", "auto")
-    private val dark = theme == "dark" || theme == "auto" &&
-        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-    private val foreground = if (dark) Color.WHITE else Color.rgb(17, 17, 17)
-    private val track = if (dark) Color.DKGRAY else Color.LTGRAY
+    private val foreground = context.getColor(R.color.foreground)
+    private val background = context.getColor(R.color.background)
+    private val track = context.getColor(R.color.reserve_track)
     private val gravity = when (config.alignment) {
         ViewConfig.Alignment.LEFT -> Gravity.START
         ViewConfig.Alignment.CENTER -> Gravity.CENTER_HORIZONTAL
@@ -92,7 +89,7 @@ internal class ReserveRenderer(private val context: Context, config: ViewConfig,
         removeAllViews(R.id.reserve_rows)
         setImageViewResource(R.id.reserve_background,
             if (config.boundariesEnabled) R.drawable.field_background_rounded else android.R.color.white)
-        setInt(R.id.reserve_background, "setColorFilter", if (dark) Color.BLACK else Color.WHITE)
+        setInt(R.id.reserve_background, "setColorFilter", background)
     }
 
     fun render(field: ReserveField, snapshot: ReserveSnapshot): RemoteViews {
@@ -191,7 +188,7 @@ internal class ReserveRenderer(private val context: Context, config: ViewConfig,
                             paint.color = if (settings.colors) palette[index]
                                 else Color.rgb(50 + index * 38, 50 + index * 38, 50 + index * 38)
                             canvas.drawRect(x, 0f, end, canvas.height.toFloat(), paint)
-                            paint.color = if (dark) Color.BLACK else Color.WHITE
+                            paint.color = background
                             if (end - x >= 2f && x > 0) canvas.drawRect(x, 0f, x + 1, canvas.height.toFloat(), paint)
                             x = end
                         }

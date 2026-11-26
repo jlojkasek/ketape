@@ -16,6 +16,19 @@ internal const val RECORD_SOUND = "record_sound"
 
 internal data class RideBest(val duration: Int, val value: Int)
 
+internal enum class PowerRecordMark { RECENT, ALL_TIME }
+
+internal fun powerRecordMark(
+    watts: Int,
+    recent: Int?,
+    allTime: Int?,
+    previous: PowerRecordMark?
+): PowerRecordMark? = when {
+    previous == PowerRecordMark.ALL_TIME || (allTime != null && watts > allTime) -> PowerRecordMark.ALL_TIME
+    previous == PowerRecordMark.RECENT || (recent != null && watts > recent) -> PowerRecordMark.RECENT
+    else -> null
+}
+
 internal class RideBestValues {
     private val samples = IntArray(powerDurations.last())
     private val sums = IntArray(powerDurations.size)

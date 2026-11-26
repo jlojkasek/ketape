@@ -1,13 +1,11 @@
 <resources>
   <string name="ride_since_restart">Seit Neustart: %1$s</string>
-  <string name="ride_continuity_help">Ein Stern (*) kennzeichnet Fahrtbestwerte ab Neustart der Erweiterung. Frühere Leistungen fehlen. Ein Kreuz (†) kennzeichnet Referenzen, die älter als 48 Stunden sind; bitte in Palmarès synchronisieren.</string>
+  <string name="ride_continuity_help">* markiert Fahrtbestwerte seit dem Neustart der Erweiterung. † markiert Referenzen, die älter als 48 Stunden sind. S steht für Saison, 42 für die letzten 42 Tage und A für Allzeit.</string>
   <string name="reserve_edit_manual">Manuelle Parameter bearbeiten</string>
   <string name="reserve_sync">Mit Intervals.icu synchronisieren</string>
   <string name="reserve_source_manual">Parameterquelle · Manuell</string>
   <string name="reserve_source_intervals">Parameterquelle · Intervals.icu</string>
   <string name="reserve_no_parameters">Keine gültigen Parameter für diese Quelle</string>
-  <string name="reserve_cached">Gespeichert aus Intervals.icu · FTP %1$.0f W · %2$.1f kJ</string>
-  <string name="reserve_no_cache">Keine Intervals.icu-Parameter gespeichert</string>
   <string name="reserve_never">Noch nie</string>
   <string name="reserve_model">Modell · Skiba differential</string>
   <string name="reserve_synced_at">Letzter Abgleich · %1$s</string>
@@ -16,12 +14,11 @@
   <string name="reserve_cp_input">Critical Power (W)</string>
   <string name="reserve_capacity_input">W′-Kapazität (kJ)</string>
   <string name="reserve_manual_parameters">Manuelle Leistungsparameter</string>
-  <string name="reserve_save">Speichern</string>
   <string name="reserve_cp_error">30 bis 800 W eingeben</string>
   <string name="reserve_capacity_error">1 bis 100 kJ eingeben</string>
   <string name="reserve_syncing">Abgleich läuft…</string>
   <string name="reserve_synced">Leistungsparameter synchronisiert</string>
-  <string name="reserve_key_rejected">API-Schlüssel abgelehnt. Unter Allgemein neu verbinden.</string>
+  <string name="reserve_key_rejected">API-Schlüssel abgelehnt. Aktualisiere ihn unter „Allgemein“.</string>
   <string name="reserve_http_error">Intervals.icu meldet HTTP %1$d. Gespeicherte Werte bleiben verfügbar.</string>
   <string name="reserve_sync_error">Abgleich fehlgeschlagen. Verbindung prüfen und erneut versuchen.</string>
   <string name="reserve_display">Anzeigeeinstellungen</string>
@@ -60,4 +57,7 @@
   <string name="reserve_reset_confirm">Mit voller Kapazität beginnen und die Modellstatistik dieser Fahrt zurücksetzen? Nur bestätigen, wenn du eine neue Schätzung starten möchtest. Fehlende Fahrtdaten werden dadurch nicht wiederhergestellt.</string>
   <string name="reserve_reset_requested">Neustart angefordert. Ergebnis im Fahrdatenfeld prüfen.</string>
   <string name="reserve_option_value">%1$s · %2$d%3$s</string>
+  <string name="reserve_manual_values">CP %1$.0f W · W′ %2$.1f kJ</string>
+  <string name="reserve_ftp_values">FTP %1$.0f W · W′ %2$.1f kJ</string>
+  <string name="reserve_indoor_ftp">Indoor-FTP %1$.0f W</string>
 </resources>

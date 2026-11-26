@@ -1,8 +1,6 @@
 package io.github.jlojkasek.ketape
 
 import android.content.Context
-import android.content.res.Configuration
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.SystemClock
@@ -46,19 +44,16 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
 
         scope.launch {
             while (isActive) {
-                val theme = prefs.getString("theme", "auto")
-                val dark = theme == "dark" || (theme == "auto" &&
-                    context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==
-                    Configuration.UI_MODE_NIGHT_YES)
-                val foreground = if (dark) Color.WHITE else Color.rgb(17, 17, 17)
-                val background = if (dark) Color.BLACK else Color.WHITE
+                val foreground = context.getColor(R.color.foreground)
+                val background = context.getColor(R.color.background)
                 val durations = selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))
-                val periods = monitor.comparisonPeriods()
+                val periods = records.comparisonPeriods
                 val page = (SystemClock.elapsedRealtime() - started) / if (config.preview) 2200L else 4000L
                 val bodyHeight = (config.viewSize.second - (28 + 2 * padding) * density).coerceAtLeast(1f)
                 val capacity = if (fullPage) (bodyHeight / (24 * density)).toInt().coerceAtLeast(1) else rowCapacity
                 val visible = comparisonPage(durations, capacity, page)
                 val ride = if (config.preview) PreviewValues.previewRide else monitor.rideBestSnapshot()
+                val marks = if (config.preview) PreviewValues.previewTableRecords else monitor.tableRecordSnapshot()
                 val view = RemoteViews(context.packageName, R.layout.best_comparison)
                 view.setImageViewResource(R.id.field_background, if (config.boundariesEnabled)
                     R.drawable.field_background_rounded else android.R.color.white)
@@ -73,14 +68,15 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                 val rowHeight = if (fullPage) {
                     bodyHeight / minOf(capacity, durations.size)
                 } else height / (minOf(rowCapacity, durations.size) + if (showHeader) 1 else 0)
-                val muted = if (dark) Color.rgb(178, 189, 200) else Color.rgb(67, 80, 93)
-                val stripe = if (dark) Color.rgb(24, 32, 40) else Color.rgb(235, 240, 245)
+                val muted = context.getColor(R.color.comparison_muted)
+                val stripe = context.getColor(R.color.comparison_stripe)
+                val stale = periods.map { !config.preview && records.stale(it.id) }
                 val referenceTitles = periods.map { period ->
-                    context.getString(if (period == "42d") R.string.comparison_42_days else R.string.records_season_short) +
-                        if (!config.preview && records.stale(period)) "†" else ""
+                    context.getString(period.shortTitle)
                 }
 
-                fun addRow(metric: String, current: String, references: List<String>, header: Boolean = false, shaded: Boolean = false) {
+                fun addRow(metric: String, current: String, references: List<String>, header: Boolean = false,
+                           shaded: Boolean = false, mark: PowerRecordMark? = null) {
                     val row = RemoteViews(context.packageName, R.layout.best_comparison_row)
                     val ids = listOf(R.id.comparison_metric, R.id.comparison_ride, R.id.comparison_reference,
                         R.id.comparison_second_reference).take(2 + references.size)
@@ -108,12 +104,24 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                         row.setTextViewTextSize(ids[index], TypedValue.COMPLEX_UNIT_PX, size)
                     }
                     if (!header) {
-                        row.setContentDescription(R.id.comparison_ride,
-                            context.getString(if (!config.preview && monitor.incompleteRide)
-                                R.string.ride_since_restart else R.string.comparison_accessible_ride, current))
+                        val description = context.getString(if (!config.preview && monitor.incompleteRide)
+                            R.string.ride_since_restart else R.string.comparison_accessible_ride, current)
+                        val markedDescription = when (mark) {
+                            PowerRecordMark.RECENT -> {
+                                row.setTextColor(R.id.comparison_ride, context.getColor(R.color.comparison_record_recent))
+                                context.getString(R.string.comparison_accessible_recent_record, description)
+                            }
+                            PowerRecordMark.ALL_TIME -> {
+                                row.setTextColor(R.id.comparison_ride, context.getColor(R.color.comparison_record_all_time))
+                                context.getString(R.string.comparison_accessible_all_time_record, description)
+                            }
+                            null -> description
+                        }
+                        row.setContentDescription(R.id.comparison_ride, markedDescription)
                         references.forEachIndexed { index, reference ->
                             row.setContentDescription(ids[index + 2], context.getString(
-                                R.string.comparison_accessible_reference, referenceTitles[index], reference))
+                                if (stale[index]) R.string.comparison_accessible_stale_reference else R.string.comparison_accessible_reference,
+                                referenceTitles[index], reference.removeSuffix("†")))
                         }
                     }
                     view.addView(if (fullPage && header) R.id.comparison_header else R.id.comparison_rows, row)
@@ -121,7 +129,9 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
 
                 if (showHeader) addRow(context.getString(if (fullPage)
                     R.string.comparison_power_unit else R.string.comparison_best),
-                    context.getString(R.string.comparison_ride), referenceTitles, header = true)
+                    context.getString(R.string.comparison_ride), referenceTitles.mapIndexed { index, title ->
+                        if (stale[index]) "$title†" else title
+                    }, header = true)
                 for ((index, duration) in visible.withIndex()) {
                     val metric = if (duration < 60) context.getString(R.string.records_seconds, duration)
                         else context.getString(R.string.records_minutes, duration / 60)
@@ -130,15 +140,21 @@ internal class BestComparisonType(private val monitor: RideRecordMonitor) :
                         fullPage -> value.toString()
                         else -> context.getString(R.string.records_watts, value)
                     }
-                    val current = valueText(ride[duration]) +
-                        if (!config.preview && monitor.incompleteRide) "*" else ""
-                    val references = periods.map { period ->
-                        val value = if (config.preview) {
-                            (if (period == "42d") PreviewValues.previewRecent else PreviewValues.previewReference)[duration]
-                        } else records.reference(period, duration)
-                        valueText(value)
+                    val mark = marks[duration]
+                    val currentValue = if (!config.preview) ride[duration] else when (mark) {
+                        PowerRecordMark.RECENT -> PreviewValues.previewRecent[duration]?.plus(5)
+                        PowerRecordMark.ALL_TIME -> PreviewValues.previewAllTime[duration]?.plus(2)
+                        null -> ride[duration]
                     }
-                    addRow(metric, current, references, shaded = index % 2 == 1)
+                    val current = valueText(currentValue) +
+                        if (!config.preview && monitor.incompleteRide) "*" else ""
+                    val references = periods.mapIndexed { referenceIndex, period ->
+                        val value = if (config.preview) {
+                            PreviewValues.previewBenchmark(period, duration)
+                        } else records.reference(period.id, duration)
+                        valueText(value) + if (!showHeader && value != null && stale[referenceIndex]) "†" else ""
+                    }
+                    addRow(metric, current, references, shaded = index % 2 == 1, mark = mark)
                 }
                 emitter.updateView(view)
                 delay(1100)

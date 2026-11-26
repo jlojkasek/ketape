@@ -1,7 +1,6 @@
 package io.github.jlojkasek.ketape
 
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -154,11 +153,8 @@ private class StackedType(
             try {
                 while (isActive) {
                     val previewFrame = PreviewValues.frame(stack.id, previewTick)
-                    val theme = prefs.getString("theme", "auto")
-                    val dark = theme == "dark" || (theme == "auto" &&
-                        context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES)
-                    val fg = if (dark) Color.WHITE else Color.rgb(17,17,17)
-                    val bg = if (dark) Color.BLACK else Color.WHITE
+                    val fg = context.getColor(R.color.foreground)
+                    val bg = context.getColor(R.color.background)
                     val view = RemoteViews(context.packageName, R.layout.stacked)
                     val gravity = when (config.alignment) {
                         ViewConfig.Alignment.LEFT -> android.view.Gravity.LEFT
@@ -314,7 +310,7 @@ private class StackedType(
 }
 
 private fun format(value: Double?, format: Format): String {
-    if (value == null || !value.isFinite() || (value < 0 && format != Format.DRIFT)) return "--"
+    if (value == null || !value.isFinite() || (value < 0 && format != Format.DRIFT)) return "–"
     return when(format) {
         Format.RATIO -> String.format(Locale.getDefault(), "%.2f", value)
         Format.DRIFT -> String.format(Locale.getDefault(), "%+.1f%%", value)

@@ -20,17 +20,18 @@ internal class ReserveMonitor(context: Context, private val clock: () -> Long = 
     private var sync: Job? = null
     private val current = MutableStateFlow(ReserveSnapshot())
     val snapshots = current.asStateFlow()
-    private var lastSyncAttempt: Long? = null
+    private var nextAutomaticSyncAt = 0L
 
     fun onState(next: RideState) {
         if (next == state) return
         val previous = state
         state = next
-        rideInProgress = next != RideState.Idle
+        rideActive.value = next != RideState.Idle
         sourceId = null
         if (next == RideState.Idle) {
             engine = null
             parameters = null
+            settings.consumeReset()
             settings.clear()
             current.value = ReserveSnapshot()
         } else if (previous == null || previous == RideState.Idle) {
@@ -56,18 +57,20 @@ internal class ReserveMonitor(context: Context, private val clock: () -> Long = 
 
     fun tick() {
         if (state == RideState.Idle) {
-            val age = System.currentTimeMillis() - settings.syncedAt
+            val wallTime = System.currentTimeMillis()
+            val refreshSince = wallTime - INTERVALS_SYNC_INTERVAL_MS + 1
             val now = clock()
-            if (!settings.manual && records.connected && age !in 0 until 86_400_000L &&
-                sync?.isActive != true && (lastSyncAttempt?.let { now - it >= 900_000 } != false)) {
-                lastSyncAttempt = now
+            if (!settings.manual && records.connected && !records.keyRejected &&
+                settings.syncedAt !in refreshSince..wallTime &&
+                sync?.isActive != true && now >= nextAutomaticSyncAt) {
+                nextAutomaticSyncAt = now + INTERVALS_IDLE_CHECK_MS
                 sync = scope.launch {
                     try {
-                        records.syncReserve()
+                        records.syncReserve(refreshSince)
                     } catch (error: CancellationException) {
                         throw error
                     } catch (_: Exception) {
-                        // Retain the previous valid parameters.
+                        nextAutomaticSyncAt = clock() + INTERVALS_SYNC_INTERVAL_MS
                     }
                 }
             }
@@ -96,9 +99,11 @@ internal class ReserveMonitor(context: Context, private val clock: () -> Long = 
     fun stop() {
         save(clock() / 1000.0)
         scope.cancel()
+        rideActive.value = false
     }
     companion object {
-        @Volatile var rideInProgress = false
-            private set
+        private val rideActive = MutableStateFlow(false)
+        val activeRide = rideActive.asStateFlow()
+        val rideInProgress: Boolean get() = rideActive.value
     }
 }

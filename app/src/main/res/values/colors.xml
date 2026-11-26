@@ -1,1 +1,11 @@
-<resources><color name="background">#FFFFFF</color><color name="foreground">#111111</color><color name="connected_status">#166534</color></resources>
+<resources>
+    <color name="background">#FFFFFF</color>
+    <color name="foreground">#111111</color>
+    <color name="connected_status">#166534</color>
+    <color name="settings_header_background">#0C3348</color>
+    <color name="comparison_muted">#43505D</color>
+    <color name="comparison_stripe">#EBF0F5</color>
+    <color name="reserve_track">#CCCCCC</color>
+    <color name="comparison_record_recent">#006934</color>
+    <color name="comparison_record_all_time">#7621A6</color>
+</resources>

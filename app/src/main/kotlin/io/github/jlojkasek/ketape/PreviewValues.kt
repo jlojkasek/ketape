@@ -5,6 +5,14 @@ internal object PreviewValues {
     val previewRide = powerDurations.zip(listOf(961, 832, 740, 685, 540, 435, 377, 342, 308, 285, 271, 252, 242, 231, 221)).toMap()
     val previewRecent = previewRide.mapValues { (_, value) -> value + 12 }
     val previewReference = previewRide.mapValues { (_, value) -> value + 25 }
+    val previewAllTime = previewRide.mapValues { (_, value) -> value + 30 }
+    val previewTableRecords = mapOf(5 to PowerRecordMark.RECENT, 60 to PowerRecordMark.ALL_TIME)
+
+    fun previewBenchmark(period: ComparisonPeriod, duration: Int): Int? = when (period) {
+        ComparisonPeriod.SEASON -> previewReference[duration]
+        ComparisonPeriod.RECENT -> previewRecent[duration]
+        ComparisonPeriod.ALL_TIME -> previewAllTime[duration]
+    }
 
     data class Frame(val main: Double, val average: Double, val secondary: Double, val balanceLeft: Double = 48.0)
     fun cadence(tick: Int): Double? = when (Math.floorMod(tick / 2, 6)) {

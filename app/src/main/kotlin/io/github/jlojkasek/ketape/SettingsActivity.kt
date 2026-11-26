@@ -3,6 +3,10 @@ package io.github.jlojkasek.ketape
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.res.ColorStateList
+import android.content.SharedPreferences
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.RippleDrawable
 import android.text.InputType
 import android.text.TextUtils
 import android.text.method.PasswordTransformationMethod
@@ -17,12 +21,14 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
+import android.widget.Toast
 import kotlinx.coroutines.*
 import java.util.Date
 import kotlin.math.roundToInt
@@ -37,70 +43,58 @@ class SettingsActivity : Activity() {
     private lateinit var recordFeedback: TextView
     private lateinit var referenceFeedback: TextView
     private lateinit var recordDetails: LinearLayout
+    private lateinit var savedReferences: LinearLayout
+    private lateinit var referenceConnection: Button
+    private lateinit var recordHeart: Switch
+    private lateinit var recordSound: Switch
+    private lateinit var openConnectionSettings: () -> Unit
     private lateinit var recordValues: LinearLayout
     private lateinit var recordDates: TextView
     private lateinit var disconnectButton: Button
     private lateinit var connectButton: Button
+    private lateinit var periodButton: Button
     private lateinit var syncButton: Button
     private var recordJob: Job? = null
     private var selectedTab = 0
+    private val accountStatusListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == INTERVALS_API_KEY || key == INTERVALS_KEY_REJECTED ||
+            key == "intervals_cache_s0_at" || key == "intervals_cache_42d_at" ||
+            key == "intervals_cache_all_at") {
+            val busy = recordJob?.isActive == true
+            updateRecordStatus(R.string.records_working.takeIf { busy }, busy)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val toolbar = LinearLayout(this).apply {
             gravity = Gravity.CENTER_VERTICAL
             minimumHeight = dp(48)
+            setBackgroundColor(getColor(R.color.settings_header_background))
             addView(ImageButton(this@SettingsActivity).apply {
-                val background = TypedValue()
-                theme.resolveAttribute(android.R.attr.selectableItemBackground, background, true)
-                setBackgroundResource(background.resourceId)
+                background = RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), null, ColorDrawable(Color.WHITE))
                 setImageResource(R.drawable.ic_back)
-                imageTintList = ColorStateList.valueOf(TextView(this@SettingsActivity).currentTextColor)
+                imageTintList = ColorStateList.valueOf(Color.WHITE)
                 contentDescription = getString(R.string.settings_back)
                 setOnClickListener { finish() }
             }, LinearLayout.LayoutParams(dp(48), dp(48)))
+            addView(ImageView(this@SettingsActivity).apply {
+                setImageResource(R.drawable.ic_stacked)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(24), dp(24)).apply {
+                marginEnd = dp(8)
+            })
             addView(TextView(this@SettingsActivity).apply {
                 setText(R.string.app_name)
+                setTextColor(Color.WHITE)
                 textSize = 20f
                 setTypeface(typeface, Typeface.BOLD)
             })
         }
 
+        lateinit var connectionSection: LinearLayout
         val display = settingsPage {
-            addView(label(R.string.intervals_connection_title, heading = true))
-            addView(label(R.string.intervals_connection_detail))
-            recordStatus = TextView(this@SettingsActivity).apply {
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(8), 0, 0)
-            }.also {
-                defaultRecordStatusColors = it.textColors
-                addView(it)
-            }
-            recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
-            connectButton = Button(this@SettingsActivity).apply {
-                setText(R.string.records_connect)
-                setOnClickListener { showApiKeyDialog() }
-            }.also { addView(it) }
-            disconnectButton = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
-                setText(R.string.records_disconnect)
-                setOnClickListener {
-                    AlertDialog.Builder(this@SettingsActivity)
-                        .setMessage(R.string.records_disconnect_detail)
-                        .setNegativeButton(R.string.settings_cancel, null)
-                        .setPositiveButton(R.string.records_disconnect) { _, _ ->
-                            runRecordAction { records.disconnect() }
-                        }.show()
-                }
-            }.also { addView(it) }
-
             addView(label(R.string.stacked_fields_name, heading = true))
-            addView(label(R.string.settings_theme, heading = true))
-            addView(choices("theme", listOf(
-                "auto" to R.string.settings_system,
-                "light" to R.string.settings_light,
-                "dark" to R.string.settings_dark
-            )))
-
             addView(label(R.string.settings_zones, heading = true))
             addView(label(R.string.settings_zones_detail))
             addView(choices("zone_colors", listOf(
@@ -118,66 +112,109 @@ class SettingsActivity : Activity() {
             addView(label(R.string.pedal_settings_title, heading = true))
             addView(pedalSettings())
 
-            addView(label(R.string.field_3, heading = true))
-            addView(Switch(this@SettingsActivity).apply {
-                setText(R.string.records_heart)
-                minHeight = dp(48)
-                isChecked = prefs.getBoolean(RECORD_HEART, false)
-                setOnCheckedChangeListener { _, enabled ->
-                    prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
-                    if (enabled) syncRecords(force = true)
+            connectionSection = LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(label(R.string.intervals_connection_title, heading = true))
+                addView(label(R.string.intervals_connection_detail))
+                recordStatus = TextView(this@SettingsActivity).apply {
+                    setTypeface(typeface, Typeface.BOLD)
+                    setPadding(0, dp(8), 0, 0)
+                }.also {
+                    defaultRecordStatusColors = it.textColors
+                    addView(it)
                 }
-            })
+                recordFeedback = TextView(this@SettingsActivity).also { addView(it) }
+                connectButton = Button(this@SettingsActivity).apply {
+                    setText(R.string.records_connect)
+                    setOnClickListener { showApiKeyDialog() }
+                }.also { addView(it) }
+                disconnectButton = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                    setText(R.string.records_disconnect)
+                    setOnClickListener {
+                        AlertDialog.Builder(this@SettingsActivity)
+                            .setMessage(R.string.records_disconnect_detail)
+                            .setNegativeButton(R.string.settings_cancel, null)
+                            .setPositiveButton(R.string.records_disconnect) { _, _ ->
+                                runRecordAction { records.disconnect() }
+                            }.show()
+                    }
+                }.also { addView(it) }
+            }.also { addView(it) }
+
+            addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                setText(R.string.settings_reset_all)
+                isAllCaps = false
+                setOnClickListener { confirmSettingsReset() }
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp(16) })
         }
 
         val powerBest = settingsPage {
-            addView(label(R.string.records_title, heading = true))
-            addView(label(R.string.records_detail))
-            addView(label(R.string.ride_continuity_help))
-            referenceFeedback = TextView(this@SettingsActivity).also { addView(it) }
             addView(label(R.string.power_best_durations, heading = true))
             addView(label(R.string.power_best_durations_detail))
             addView(Button(this@SettingsActivity).apply {
                 setText(R.string.power_best_choose_durations)
                 setOnClickListener { showPowerDurationDialog() }
             })
+            addView(label(R.string.records_title, heading = true))
+            addView(label(R.string.records_detail))
+            periodButton = Button(this@SettingsActivity).apply {
+                isAllCaps = false
+                setOnClickListener { showComparisonPeriodDialog() }
+            }.also { addView(it) }
+            referenceFeedback = TextView(this@SettingsActivity).also { addView(it) }
+            referenceConnection = Button(this@SettingsActivity).apply {
+                setOnClickListener { openConnectionSettings() }
+            }.also { addView(it) }
             recordDetails = LinearLayout(this@SettingsActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(label(R.string.records_period, heading = true))
-                addView(choices(RECORD_PERIOD, listOf(
-                    "s0" to R.string.records_season, "42d" to R.string.records_42_days,
-                    "both" to R.string.records_both
-                )) { syncRecords() })
+                syncButton = Button(this@SettingsActivity).apply {
+                    setText(R.string.records_sync)
+                    setOnClickListener { syncRecords(force = true) }
+                }.also { addView(it) }
+            }.also { addView(it) }
+
+            addView(label(R.string.records_notifications, heading = true))
+            addView(label(R.string.records_notifications_detail))
+            recordHeart = Switch(this@SettingsActivity).apply {
+                setText(R.string.records_heart)
+                minHeight = dp(48)
+                isChecked = prefs.getBoolean(RECORD_HEART, false)
+                setOnCheckedChangeListener { _, enabled ->
+                    prefs.edit().putBoolean(RECORD_HEART, enabled).apply()
+                    if (enabled && !records.keyRejected) syncRecords(force = true)
+                }
+            }.also { addView(it) }
+            recordSound = Switch(this@SettingsActivity).apply {
+                setText(R.string.records_sound)
+                minHeight = dp(48)
+                isChecked = prefs.getBoolean(RECORD_SOUND, false)
+                setOnCheckedChangeListener { _, enabled ->
+                    prefs.edit().putBoolean(RECORD_SOUND, enabled).apply()
+                }
+            }.also { addView(it) }
+            savedReferences = LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.VERTICAL
                 addView(label(R.string.records_saved_values, heading = true))
                 recordDates = TextView(this@SettingsActivity).also { addView(it) }
                 recordValues = LinearLayout(this@SettingsActivity).apply {
                     orientation = LinearLayout.VERTICAL
                 }.also { addView(it) }
-                syncButton = Button(this@SettingsActivity).apply {
-                    setText(R.string.records_sync)
-                    setOnClickListener { syncRecords(force = true) }
-                }.also { addView(it) }
-                addView(Switch(this@SettingsActivity).apply {
-                    setText(R.string.records_sound)
-                    minHeight = dp(48)
-                    isChecked = prefs.getBoolean(RECORD_SOUND, false)
-                    setOnCheckedChangeListener { _, enabled ->
-                        prefs.edit().putBoolean(RECORD_SOUND, enabled).apply()
-                    }
-                })
             }.also { addView(it) }
-
+            addView(label(R.string.ride_continuity_help))
         }
 
         val about = settingsPage {
             addView(label(R.string.settings_about, heading = true))
-            addView(label(R.string.settings_product_summary).apply { setPadding(0, 0, 0, dp(8)) })
             addView(label(R.string.settings_setup))
             addView(label(R.string.settings_updates).apply { setPadding(0, dp(8), 0, 0) })
             addView(TextView(this@SettingsActivity).apply {
                 text = getString(R.string.settings_version, BuildConfig.VERSION_NAME)
                 setPadding(0, dp(8), 0, 0)
             })
+            addView(label(R.string.endurance_field, heading = true))
+            addView(label(R.string.endurance_help).apply { setPadding(0, dp(8), 0, 0) })
         }
 
         val reserve = settingsPage { addView(createReserveSettings()) }
@@ -197,6 +234,10 @@ class SettingsActivity : Activity() {
                 buttons[position].setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
                 indicators[position].visibility = if (selected) View.VISIBLE else View.INVISIBLE
             }
+        }
+        openConnectionSettings = {
+            selectTab(0)
+            display.post { display.smoothScrollTo(0, connectionSection.top) }
         }
         tabTitles.forEachIndexed { index, title ->
             tabs.addView(LinearLayout(this).apply {
@@ -231,6 +272,7 @@ class SettingsActivity : Activity() {
             pages.forEach { addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)) }
         })
         selectTab((savedInstanceState?.getInt("selected_tab") ?: 0).coerceIn(pages.indices))
+        prefs.registerOnSharedPreferenceChangeListener(accountStatusListener)
         updateRecordStatus()
         syncRecords()
     }
@@ -248,7 +290,21 @@ class SettingsActivity : Activity() {
         })
     }
 
+    private fun confirmSettingsReset() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.settings_reset_title)
+            .setMessage(R.string.settings_reset_warning)
+            .setNegativeButton(R.string.settings_cancel, null)
+            .setPositiveButton(R.string.settings_reset_confirm) { _, _ ->
+                resetExtensionSettings(prefs)
+                Toast.makeText(this, R.string.settings_reset_done, Toast.LENGTH_SHORT).show()
+                recreate()
+            }
+            .show()
+    }
+
     override fun onDestroy() {
+        prefs.unregisterOnSharedPreferenceChangeListener(accountStatusListener)
         scope.cancel()
         super.onDestroy()
     }
@@ -268,32 +324,53 @@ class SettingsActivity : Activity() {
         val feedback = caption("")
         val source = button("")
         val manual = button(getString(R.string.reserve_edit_manual))
-        val sync = button(getString(R.string.reserve_sync))
+        val sync = button("")
+        val resetSection = LinearLayout(this@SettingsActivity).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        var syncing = false
         fun refresh() {
             source.text = if (settings.manual) getString(R.string.reserve_source_manual) else getString(R.string.reserve_source_intervals)
             manual.visibility = if (settings.manual) View.VISIBLE else View.GONE
+            sync.visibility = if (settings.manual) View.GONE else View.VISIBLE
+            sync.setText(when {
+                records.keyRejected -> R.string.records_update_key
+                !records.connected -> R.string.records_connect
+                else -> R.string.reserve_sync
+            })
+            sync.isEnabled = !syncing && (!ReserveMonitor.rideInProgress || !records.connected || records.keyRejected)
+            resetSection.visibility = if (ReserveMonitor.rideInProgress) View.VISIBLE else View.GONE
             val parameters = settings.parameters
-            val current = parameters?.let {
-                String.format(java.util.Locale.getDefault(), "%s · %.0f W · %.1f kJ", it.displaySource(this@SettingsActivity), it.watts, it.capacity / 1000)
-            } ?: getString(R.string.reserve_no_parameters)
-            val cached = settings.cached?.let {
-                getString(R.string.reserve_cached, it.watts, it.capacity / 1000)
-            } ?: getString(R.string.reserve_no_cache)
-            val lastSync = settings.syncedAt.takeIf { it > 0 }?.let {
-                DateFormat.getMediumDateFormat(this@SettingsActivity).format(Date(it)) + " " +
-                    DateFormat.getTimeFormat(this@SettingsActivity).format(Date(it))
-            } ?: getString(R.string.reserve_never)
-            parameterSummary.text = listOf(current, getString(R.string.reserve_model), cached,
-                getString(R.string.reserve_synced_at, lastSync)).joinToString("\n")
+            parameterSummary.text = buildList {
+                add(parameters?.let { getString(
+                    if (settings.manual) R.string.reserve_manual_values else R.string.reserve_ftp_values,
+                    it.watts, it.capacity / 1000
+                ) } ?: getString(R.string.reserve_no_parameters))
+                if (!settings.manual) {
+                    settings.indoorCached?.takeIf { it.watts != parameters?.watts }?.let {
+                        add(getString(R.string.reserve_indoor_ftp, it.watts))
+                    }
+                    val lastSync = settings.syncedAt.takeIf { it > 0 }?.let {
+                        DateFormat.getMediumDateFormat(this@SettingsActivity).format(Date(it)) + " " +
+                            DateFormat.getTimeFormat(this@SettingsActivity).format(Date(it))
+                    } ?: getString(R.string.reserve_never)
+                    add(getString(R.string.reserve_synced_at, lastSync))
+                    if (ReserveMonitor.rideInProgress && records.connected && !records.keyRejected) {
+                        add(getString(R.string.reserve_sync_after_ride))
+                    }
+                }
+            }.joinToString("\n")
+            feedback.visibility = if (!settings.manual && feedback.text.isNotEmpty()) View.VISIBLE else View.GONE
         }
         source.setOnClickListener {
             val options = arrayOf("Intervals.icu", getString(R.string.reserve_manual))
             AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.reserve_source))
                 .setSingleChoiceItems(options, if (settings.manual) 1 else 0) { dialog, index ->
                     prefs.edit().putBoolean("reserve_manual", index == 1).apply()
+                    feedback.text = ""
                     refresh()
                     dialog.dismiss()
-                }.setNegativeButton(android.R.string.cancel, null).show()
+                }.setNegativeButton(R.string.settings_cancel, null).show()
         }
         manual.setOnClickListener {
             val inputs = LinearLayout(this@SettingsActivity).apply {
@@ -310,9 +387,8 @@ class SettingsActivity : Activity() {
             }
             val cp = input(getString(R.string.reserve_cp_input), prefs.getFloat("reserve_cp", 0f))
             val capacity = input(getString(R.string.reserve_capacity_input), prefs.getFloat("reserve_kj", 0f))
-            val dialog = AlertDialog.Builder(this@SettingsActivity).setTitle(getString(R.string.reserve_manual_parameters))
-                .setView(inputs).setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(getString(R.string.reserve_save), null).show()
+            val dialog = createInputDialog(R.string.reserve_manual_parameters, inputs)
+            dialog.show()
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val watts = cp.text.toString().replace(',', '.').toDoubleOrNull() ?: 0.0
                 val kj = capacity.text.toString().replace(',', '.').toDoubleOrNull() ?: 0.0
@@ -326,8 +402,13 @@ class SettingsActivity : Activity() {
             }
         }
         sync.setOnClickListener {
-            sync.isEnabled = false
+            if (!records.connected || records.keyRejected) {
+                openConnectionSettings()
+                return@setOnClickListener
+            }
+            syncing = true
             feedback.text = getString(R.string.reserve_syncing)
+            refresh()
             scope.launch {
                 try {
                     records.syncReserve()
@@ -343,7 +424,7 @@ class SettingsActivity : Activity() {
                 } catch (_: Exception) {
                     feedback.text = getString(R.string.reserve_sync_error)
                 } finally {
-                    sync.isEnabled = true
+                    syncing = false
                     refresh()
                 }
             }
@@ -359,7 +440,7 @@ class SettingsActivity : Activity() {
                         prefs.edit().putInt(key, values[index]).apply()
                         update()
                         dialog.dismiss()
-                    }.setNegativeButton(android.R.string.cancel, null).show()
+                    }.setNegativeButton(R.string.settings_cancel, null).show()
             }
             addView(choice)
         }
@@ -372,17 +453,6 @@ class SettingsActivity : Activity() {
         addView(parameterSummary)
         addView(sync)
         addView(feedback)
-        addView(button(getString(R.string.reserve_reset)).apply {
-            setOnClickListener {
-                AlertDialog.Builder(this@SettingsActivity)
-                    .setMessage(R.string.reserve_reset_confirm)
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .setPositiveButton(R.string.reserve_reset) { _, _ ->
-                        settings.requestReset()
-                        feedback.text = getString(R.string.reserve_reset_requested)
-                    }.show()
-            }
-        })
         addView(caption(getString(R.string.reserve_display)).apply { setTypeface(null, Typeface.BOLD) })
         addView(Switch(this@SettingsActivity).apply {
             text = getString(R.string.reserve_dynamic_colors)
@@ -392,9 +462,28 @@ class SettingsActivity : Activity() {
         options(getString(R.string.reserve_graph_duration), "reserve_graph", listOf(3, 5, 10, 15), 5, " min")
         options(getString(R.string.reserve_power_average), "reserve_average", listOf(3, 10, 30), 10, " s")
         options(getString(R.string.reserve_low_threshold), "reserve_threshold", (5..50 step 5).toList(), 20, "%")
+        val resetFeedback = caption("").apply { visibility = View.GONE }
+        resetSection.addView(button(getString(R.string.reserve_reset)).apply {
+            setOnClickListener {
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setMessage(R.string.reserve_reset_confirm)
+                    .setNegativeButton(R.string.settings_cancel, null)
+                    .setPositiveButton(R.string.reserve_reset) { _, _ ->
+                        if (ReserveMonitor.rideInProgress) {
+                            settings.requestReset()
+                            resetFeedback.setText(R.string.reserve_reset_requested)
+                            resetFeedback.visibility = View.VISIBLE
+                        }
+                    }.show()
+            }
+        })
+        resetSection.addView(resetFeedback)
+        addView(resetSection)
+        addView(caption(getString(R.string.reserve_model)))
         addView(caption(getString(R.string.reserve_explanation)))
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key?.startsWith("intervals_cache_reserve_") == true || key == "intervals_api_key") refresh()
+            if (key?.startsWith("intervals_cache_reserve_") == true || key == INTERVALS_API_KEY ||
+                key == INTERVALS_KEY_REJECTED) refresh()
         }
         addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(view: View) {
@@ -403,6 +492,12 @@ class SettingsActivity : Activity() {
             }
             override fun onViewDetachedFromWindow(view: View) = prefs.unregisterOnSharedPreferenceChangeListener(listener)
         })
+        scope.launch {
+            ReserveMonitor.activeRide.collect { active ->
+                if (!active) resetFeedback.visibility = View.GONE
+                refresh()
+            }
+        }
         refresh()
     }
 
@@ -504,13 +599,41 @@ class SettingsActivity : Activity() {
                 (popup as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = checked.any { it }
             }
             .setNegativeButton(R.string.settings_cancel, null)
-            .setPositiveButton(R.string.power_best_apply_durations) { _, _ ->
+            .setPositiveButton(R.string.settings_apply) { _, _ ->
                 prefs.edit().putStringSet(POWER_BEST_DURATIONS,
                     powerDurations.filterIndexed { index, _ -> checked[index] }.map { it.toString() }.toSet()).apply()
                 updateRecordStatus()
             }
             .create()
         dialog.show()
+    }
+
+    private fun showComparisonPeriodDialog() {
+        val options = ComparisonPeriod.entries
+        val previous = records.comparisonPeriods
+        val checked = options.map { it in previous }.toBooleanArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.records_period)
+            .setMultiChoiceItems(options.map { getString(it.title) }.toTypedArray(), checked) { dialog, index, selected ->
+                val alert = dialog as AlertDialog
+                if (selected && checked.indices.count { checked[it] && it != index } >= ComparisonPeriod.MAX_SELECTION) {
+                    checked[index] = false
+                    alert.listView.setItemChecked(index, false)
+                    Toast.makeText(this, R.string.records_period_limit, Toast.LENGTH_SHORT).show()
+                } else {
+                    checked[index] = selected
+                }
+                alert.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = checked.any { it }
+            }
+            .setNegativeButton(R.string.settings_cancel, null)
+            .setPositiveButton(R.string.settings_apply) { _, _ ->
+                val selection = options.filterIndexed { index, _ -> checked[index] }
+                if (selection != previous) {
+                    prefs.edit().putString(RECORD_PERIOD, selection.joinToString(",") { it.id }).apply()
+                    syncRecords()
+                }
+            }
+            .show()
     }
 
     private fun durationLabel(duration: Int): String =
@@ -547,24 +670,22 @@ class SettingsActivity : Activity() {
                 updateIcon()
             }
         }
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.records_api_key)
-            .setMessage(R.string.records_key_help)
-            .setView(LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(24), 0, dp(24), 0)
-                addView(LinearLayout(this@SettingsActivity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                    addView(toggleVisibility, LinearLayout.LayoutParams(dp(48), dp(48)))
-                }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT))
+        val replacing = records.connected
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(24), 0, dp(24), dp(8))
+            addView(LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(toggleVisibility, LinearLayout.LayoutParams(dp(48), dp(48)))
             })
-            .setNegativeButton(R.string.settings_cancel, null)
-            .setPositiveButton(R.string.records_connect, null)
-            .create()
-        dialog.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            addView(label(R.string.records_key_help))
+            if (replacing) {
+                addView(label(R.string.records_replace_help).apply { setPadding(0, dp(8), 0, 0) })
+            }
+        }
+        val dialog = createInputDialog(R.string.records_api_key, content, secure = true)
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val apiKey = input.text.toString().trim()
@@ -582,6 +703,22 @@ class SettingsActivity : Activity() {
             }
         }
         dialog.show()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun createInputDialog(title: Int, content: View, secure: Boolean = false): AlertDialog {
+        return AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(ScrollView(this).apply { addView(content) })
+            .setNegativeButton(R.string.settings_cancel, null)
+            .setPositiveButton(R.string.settings_save, null)
+            .create().apply {
+                window?.apply {
+                    if (secure) addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or
+                        WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+                }
+            }
     }
 
     private fun syncRecords(force: Boolean = false) {
@@ -614,20 +751,27 @@ class SettingsActivity : Activity() {
 
     private fun updateRecordStatus(message: Int? = null, busy: Boolean = false, feedback: String? = null) {
         val connected = records.connected
-        val periods = records.periods
-        fun periodTitle(period: String) = getString(if (period == "42d")
-            R.string.comparison_42_days else R.string.records_season_short)
-        connectButton.visibility = if (connected) View.GONE else View.VISIBLE
+        val needsKey = records.keyRejected
+        val periods = records.comparisonPeriods
+        periodButton.text = getString(R.string.records_period_value,
+            periods.joinToString(" · ") { getString(it.shortTitle) })
+        connectButton.setText(if (connected) R.string.records_update_key else R.string.records_connect)
         connectButton.isEnabled = !busy
+        referenceConnection.visibility = if (!connected || needsKey) View.VISIBLE else View.GONE
+        referenceConnection.setText(if (needsKey) R.string.records_update_key else R.string.records_connect)
         recordDetails.visibility = if (connected) View.VISIBLE else View.GONE
-        syncButton.isEnabled = !busy
+        savedReferences.visibility = recordDetails.visibility
+        syncButton.isEnabled = !busy && !needsKey
+        recordHeart.isEnabled = connected
+        recordSound.isEnabled = recordHeart.isEnabled
         disconnectButton.visibility = if (connected) View.VISIBLE else View.GONE
         disconnectButton.isEnabled = !busy
-        val showConnected = connected && message != R.string.records_key_rejected
+        val showConnected = connected && !needsKey
         recordStatus.setTextColor(if (showConnected)
             ColorStateList.valueOf(getColor(R.color.connected_status)) else defaultRecordStatusColors)
         recordStatus.text = when {
-            !showConnected -> getString(R.string.records_not_connected)
+            needsKey -> getString(R.string.records_connection_needs_key)
+            !connected -> getString(R.string.records_not_connected)
             records.accountName != null -> getString(R.string.records_connected_as, records.accountName)
             else -> getString(R.string.records_connected)
         }
@@ -636,24 +780,24 @@ class SettingsActivity : Activity() {
         referenceFeedback.text = recordFeedback.text
         referenceFeedback.visibility = recordFeedback.visibility
         recordDates.text = periods.joinToString("\n") { period ->
-            val syncedAt = records.syncedAt(period)
+            val syncedAt = records.syncedAt(period.id)
             val detail = if (syncedAt == 0L) getString(R.string.records_pending) else Date(syncedAt).let {
                 getString(R.string.records_last_sync,
                     DateFormat.getDateFormat(this).format(it), DateFormat.getTimeFormat(this).format(it))
             }
-            if (periods.size > 1) "${periodTitle(period)} · $detail" else detail
+            if (periods.size > 1) "${getString(period.shortTitle)} · $detail" else detail
         }
         recordValues.removeAllViews()
-        if (periods.none { records.syncedAt(it) > 0 }) return
+        if (periods.none { records.syncedAt(it.id) > 0 }) return
         for (duration in selectedPowerDurations(prefs.getStringSet(POWER_BEST_DURATIONS, null))) {
             val title = durationLabel(duration)
             val valueText = periods.joinToString("\n") { period ->
-                val value = records.reference(period, duration)
+                val value = records.reference(period.id, duration)
                 val text = when {
                     value == null -> getString(R.string.records_no_value)
                     else -> getString(R.string.records_watts, value)
                 }
-                if (periods.size > 1) "${periodTitle(period)} · $text" else text
+                if (periods.size > 1) "${getString(period.shortTitle)} · $text" else text
             }
             recordValues.addView(LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL
@@ -696,4 +840,17 @@ class SettingsActivity : Activity() {
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).roundToInt()
+}
+
+internal fun resetExtensionSettings(prefs: SharedPreferences) {
+    val keys = listOf(
+        "theme", "zone_colors", "cadence_balance", PEDAL_LAYOUT_KEY, BALANCE_WARNING_KEY,
+        RECORD_PERIOD, RECORD_HEART, RECORD_SOUND, POWER_BEST_DURATIONS,
+        "reserve_manual", "reserve_cp", "reserve_kj", "reserve_colors",
+        "reserve_graph", "reserve_average", "reserve_threshold"
+    )
+    val editor = prefs.edit()
+    keys.forEach { editor.remove(it) }
+    prefs.all.keys.filter { it.startsWith("smoothing_") }.forEach { editor.remove(it) }
+    editor.apply()
 }
