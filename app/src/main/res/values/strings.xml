@@ -5,6 +5,8 @@
   <string name="field_4">Speed</string>
   <string name="field_5">Distance</string>
   <string name="field_6">Cadence</string>
+  <string name="ride_load_field">Ride Load</string>
+  <string name="ride_load_description">Training Stress Score (TSS), calories burned from power (kcal), and Intensity Factor (IF) for the current ride.</string>
   <string name="settings_save">Save</string>
   <string name="settings_cancel">Cancel</string>
   <string name="settings_back">Back</string>

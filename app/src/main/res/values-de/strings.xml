@@ -5,6 +5,8 @@
   <string name="field_4">Geschwindigkeit</string>
   <string name="field_5">Strecke</string>
   <string name="field_6">Trittfrequenz</string>
+  <string name="ride_load_field">Fahrtbelastung</string>
+  <string name="ride_load_description">Trainingsbelastung (TSS), aus der Leistung berechnete verbrannte Kalorien (kcal) und Intensitätsfaktor (IF) der aktuellen Fahrt.</string>
   <string name="settings_save">Speichern</string>
   <string name="settings_cancel">Abbrechen</string>
   <string name="settings_back">Zurück</string>

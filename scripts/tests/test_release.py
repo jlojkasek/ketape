@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+import struct
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +15,19 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(3, manifest['latestVersionCode'])
         self.assertEqual('io.github.jlojkasek.ketape', manifest['packageName'])
         self.assertTrue(manifest['latestApkUrl'].endswith('/v0.1.2/ketape-0.1.2.apk'))
+
+    def test_manifest_links_three_portrait_screenshots_at_the_release_tag(self):
+        version = '2.3.4'
+        base = f'https://raw.githubusercontent.com/{release.CHANNEL["repository"]}/refs/tags/v{version}/'
+        paths = [f'docs/images/karoo/{name}.png' for name in ('stacked-fields', 'palmares', 'reserve')]
+        self.assertEqual([base + path for path in paths], release.manifest(version, 42, 'Notes')['screenshotUrls'])
+        for path in paths:
+            with self.subTest(path=path):
+                with (release.ROOT / path).open('rb') as png:
+                    self.assertEqual(b'\x89PNG\r\n\x1a\n', png.read(8))
+                    self.assertEqual(b'IHDR', png.read(8)[4:])
+                    width, height = struct.unpack('>II', png.read(8))
+                    self.assertEqual((480, 800), (width, height))
 
     def test_wrong_signer_blocks_publication(self):
         with patch.object(release, 'run', return_value='Signer #1 certificate SHA-256 digest: deadbeef'):

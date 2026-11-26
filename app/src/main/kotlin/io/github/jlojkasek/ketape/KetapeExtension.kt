@@ -21,7 +21,7 @@ private data class Metric(val type: String, val format: Format = Format.INTEGER)
 private enum class Format { INTEGER, SPEED, DISTANCE, TIME, RATIO, DRIFT }
 private data class Stack(val id: String, val titleRes: Int, val unit: String,
     val main: Metric, val left: Metric, val right: Metric?,
-    val leftLabel: String = "Ø", val rightLabel: String = "MAX")
+    val leftLabel: String = "Ø", val rightLabel: String = "MAX", val mainIsRideSummary: Boolean = false)
 
 private val stacks = listOf(
     Stack("power", R.string.field_0, "W", Metric(DataType.Type.POWER), Metric(DataType.Type.AVERAGE_POWER), Metric(DataType.Type.NORMALIZED_POWER), rightLabel = "NP"),
@@ -31,6 +31,9 @@ private val stacks = listOf(
     Stack("endurance", R.string.endurance_field, "NP/HR",
         Metric("endurance-ratio", Format.RATIO), Metric("endurance-drift", Format.DRIFT),
         Metric("endurance-z2"), "Drift", "Z2♥"),
+    Stack("ride-load", R.string.ride_load_field, "TSS",
+        Metric(DataType.Type.TRAINING_STRESS_SCORE), Metric(DataType.Type.CALORIES),
+        Metric(DataType.Type.INTENSITY_FACTOR, Format.RATIO), "kcal", "IF", mainIsRideSummary = true),
     Stack("cadence", R.string.field_6, "rpm", Metric(DataType.Type.CADENCE), Metric(DataType.Type.AVERAGE_CADENCE), Metric(DataType.Type.MAX_CADENCE))
 )
 
@@ -187,7 +190,8 @@ private class StackedType(
                         } else {
                             val timestamp = timestamps[metric.type]
                             // Never leave a disconnected sensor's last current value on screen.
-                            if (metric == stack.main && timestamp != null && SystemClock.elapsedRealtime() - timestamp > 5000) null
+                            if (metric == stack.main && !stack.mainIsRideSummary &&
+                                timestamp != null && SystemClock.elapsedRealtime() - timestamp > 5000) null
                             else values[metric.type]
                         }
                     val mainValue = rawValue(stack.main, 0)
@@ -236,7 +240,7 @@ private class StackedType(
                     view.setViewVisibility(R.id.zone, if (badgeZone != null) android.view.View.VISIBLE else android.view.View.GONE)
                     view.setTextViewText(R.id.zone, badgeZone?.let { "Z${it.number}" } ?: "")
                     val iconResource = when {
-                        isPower -> R.drawable.ic_power
+                        isPower || stack.id == "ride-load" -> R.drawable.ic_power
                         stack.id == "heart-rate" || isEndurance -> R.drawable.ic_heart
                         stack.id == "speed" -> R.drawable.ic_speed
                         stack.id == "distance" -> R.drawable.ic_distance

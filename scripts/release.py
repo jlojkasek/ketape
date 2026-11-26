@@ -56,6 +56,7 @@ def inspect_apk(apk, tools):
 
 def manifest(version, code, notes):
     repo = CHANNEL['repository']
+    image_base = f'https://raw.githubusercontent.com/{repo}/refs/tags/v{version}/docs/images/karoo'
     return dict(label='kEtape', packageName=CHANNEL['packageName'],
                 latestApkUrl=f'https://github.com/{repo}/releases/download/v{version}/ketape-{version}.apk',
                 latestVersion=version, latestVersionCode=code, developer='Jannes Lojkasek',
@@ -63,7 +64,8 @@ def manifest(version, code, notes):
                     'Bessere Fahrdaten für deinen Karoo. Passe deine Stacked Fields an, '
                     'vergleiche mit Palmarès deine Leistungsbestwerte und verfolge mit Réserve deine W′-Reserve.'
                 ),
-                releaseNotes=notes)
+                releaseNotes=notes,
+                screenshotUrls=[f'{image_base}/{name}.png' for name in ('stacked-fields', 'palmares', 'reserve')])
 
 
 def prepare(apk, tools):

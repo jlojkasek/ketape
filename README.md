@@ -19,6 +19,7 @@ See a main reading and its ride summaries in the same data field. The screenshot
 | Speed | km/h | Ride average and maximum |
 | Distance | Kilometres | Elevation gained and lost |
 | Cadence | rpm | Ride average and maximum in Classic. Compatible pedal sensors can add left/right balance, pedal smoothness and torque effectiveness. |
+| Ride Load | Training Stress Score (e.g. 64 TSS) | Calories burned from power (e.g. 684 kcal) and Intensity Factor (e.g. 0.80 IF) |
 
 You can smooth the main reading for power, heart rate, speed and cadence. Power and heart rate can show the zone from your Karoo profile as a background color or a small badge. [Cadence and pedal layouts](docs/pedal-fields.md#usage-english)
 
@@ -71,6 +72,11 @@ In **General**, connect with a personal Intervals.icu API key. kEtape stores the
 kEtape refreshes the references after a Karoo restart when the device is online and idle, with up to three attempts. During normal use, it checks for updates while idle and waits a day before automatically retrying a failed refresh. The last downloaded values are available offline. See the last refresh in **Palmarès** or **Réserve**.
 
 ## What's new
+
+### 1.1.9 · Ride Load
+
+- **Ride Load** combines the current ride's TSS, calories burned from power, and Intensity Factor in one field. It uses the Karoo's ride values and shows a dash for any unavailable reading.
+- The kEtape details in the Karoo Extensions Library include three portrait previews of Stacked Fields, Palmarès, and Réserve.
 
 ### 1.1.8 · Settings and sync
 
