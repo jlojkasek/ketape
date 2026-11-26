@@ -16,12 +16,12 @@ See a main reading and its ride summaries in the same data field. The screenshot
 | --- | --- | --- |
 | Power | Watts | Ride average and normalized power (NP) |
 | Heart Rate | Beats per minute | Ride average and maximum |
-| Speed | km/h | Ride average and maximum |
-| Distance | Kilometres | Elevation gained and lost |
+| Speed | Speed in km/h or mph (e.g. 32.2 km/h or 20.0 mph) | Ride average and maximum in the same unit |
+| Distance | Distance in km or mi (e.g. 16.1 km or 10.0 mi) | Elevation gained and lost in m or ft (e.g. 305 m or 1,000 ft) |
 | Cadence | rpm | Ride average and maximum in Classic. Compatible pedal sensors can add left/right balance, pedal smoothness and torque effectiveness. |
 | Ride Load | Training Stress Score (e.g. 64 TSS) | Calories burned from power (e.g. 684 kcal) and Intensity Factor (e.g. 0.80 IF) |
 
-You can smooth the main reading for power, heart rate, speed and cadence. Power and heart rate can show the zone from your Karoo profile as a background color or a small badge. [Cadence and pedal layouts](docs/pedal-fields.md#usage-english)
+Speed and distance use the Karoo's distance setting. Ascent and descent use its separate elevation setting. With Mixed units, you can see miles and metres together. You can smooth the main reading for power, heart rate, speed and cadence. Power and heart rate can show the zone from your Karoo profile as a background color or a small badge. [Cadence and pedal layouts](docs/pedal-fields.md#usage-english)
 
 ### Endurance
 
@@ -63,7 +63,7 @@ Set critical power (CP) and W′ manually, or import cycling FTP and W′ from I
 
 Install updates over your existing copy to keep your settings and field layouts. [Update manifest](https://github.com/jlojkasek/ketape/releases/latest/download/manifest.json)
 
-kEtape supports English and German. The data fields use metric units and follow the Karoo's light or dark mode.
+kEtape supports English and German. The data fields follow the Karoo's light or dark mode.
 
 ## Intervals.icu and offline use
 
@@ -72,6 +72,10 @@ In **General**, connect with a personal Intervals.icu API key. kEtape stores the
 kEtape refreshes the references after a Karoo restart when the device is online and idle, with up to three attempts. During normal use, it checks for updates while idle and waits a day before automatically retrying a failed refresh. The last downloaded values are available offline. See the last refresh in **Palmarès** or **Réserve**.
 
 ## What's new
+
+### 1.1.10 · Karoo units
+
+- **Speed** and **Distance** follow the Karoo's distance and elevation settings, including Mixed units.
 
 ### 1.1.9 · Ride Load
 

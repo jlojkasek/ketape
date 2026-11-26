@@ -88,7 +88,7 @@
   <string name="power_description">Aktuelle Leistung mit Fahrt-Ø und normalisierter Leistung.</string>
   <string name="heart_description">Aktueller Puls mit Fahrt-Ø und Höchstwert.</string>
   <string name="speed_description">Aktuelles Tempo mit Fahrt-Ø und Höchstwert.</string>
-  <string name="distance_description">Gefahrene Strecke mit Anstiegs- und Abfahrtshöhenmetern.</string>
+  <string name="distance_description">Gefahrene Strecke mit Auf- und Abstieg in den Karoo-Einheiten.</string>
   <string name="cadence_description">Aktuelle Trittfrequenz mit Fahrtwerten oder Links-rechts-Leistungsbalance.</string>
   <string name="best_comparison_description">Vergleiche deine Fahrtbestwerte je Dauer direkt mit deinen Referenzwerten aus Intervals.icu.</string>
   <string name="power_best_description">Fahrtbestwert und Intervals.icu-Referenzen in einem kompakten Feld, das durch deine gewählten Dauern wechselt.</string>

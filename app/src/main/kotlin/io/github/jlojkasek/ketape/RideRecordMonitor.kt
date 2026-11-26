@@ -19,11 +19,13 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         private set
     @Volatile var enduranceRatio: Double? = null
         private set
+    @Volatile var preferredUnits: UserProfile.PreferredUnit? = null
+        private set
     private var normalizedPower: Double? = null
     private var averageHeartRate: Double? = null
     private var endurance = EnduranceMetrics()
     private var heartRateZoneTwo: IntRange? = null
-    private var zoneProfileConsumer: String? = null
+    private var userProfileConsumer: String? = null
     private val records = IntervalsRecords(context)
     private val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -64,7 +66,8 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         profileConsumer = system.addConsumer<ActiveRideProfile> { event ->
             scope.launch { reserve.indoor = event.profile.indoor }
         }
-        zoneProfileConsumer = system.addConsumer<UserProfile> { profile ->
+        userProfileConsumer = system.addConsumer<UserProfile> { profile ->
+            preferredUnits = profile.preferredUnit
             scope.launch {
                 heartRateZoneTwo = profile.heartRateZones.getOrNull(1)?.let { it.min..it.max }
                     ?.takeUnless { it.isEmpty() }
@@ -223,7 +226,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         scope.cancel()
         metrics.forEach(system::removeConsumer)
         profileConsumer?.let(system::removeConsumer)
-        zoneProfileConsumer?.let(system::removeConsumer)
+        userProfileConsumer?.let(system::removeConsumer)
         stateConsumer?.let(system::removeConsumer)
     }
 }

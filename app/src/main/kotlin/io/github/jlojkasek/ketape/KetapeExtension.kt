@@ -12,22 +12,34 @@ import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.*
+import io.hammerhead.karooext.models.UserProfile.PreferredUnit
+import io.hammerhead.karooext.models.UserProfile.PreferredUnit.UnitType.IMPERIAL
 import kotlinx.coroutines.*
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 private data class Metric(val type: String, val format: Format = Format.INTEGER)
-private enum class Format { INTEGER, SPEED, DISTANCE, TIME, RATIO, DRIFT }
-private data class Stack(val id: String, val titleRes: Int, val unit: String,
+internal enum class Format {
+    INTEGER, SPEED, DISTANCE, ELEVATION, RATIO, DRIFT;
+
+    fun unit(preferred: PreferredUnit?): String = when (this) {
+        SPEED -> if (preferred?.distance == IMPERIAL) "mph" else "km/h"
+        DISTANCE -> if (preferred?.distance == IMPERIAL) "mi" else "km"
+        ELEVATION -> if (preferred?.elevation == IMPERIAL) "ft" else "m"
+        else -> ""
+    }
+}
+private data class Stack(val id: String, val titleRes: Int, val unit: String?,
     val main: Metric, val left: Metric, val right: Metric?,
     val leftLabel: String = "Ø", val rightLabel: String = "MAX", val mainIsRideSummary: Boolean = false)
 
 private val stacks = listOf(
     Stack("power", R.string.field_0, "W", Metric(DataType.Type.POWER), Metric(DataType.Type.AVERAGE_POWER), Metric(DataType.Type.NORMALIZED_POWER), rightLabel = "NP"),
     Stack("heart-rate", R.string.field_3, "bpm", Metric(DataType.Type.HEART_RATE), Metric(DataType.Type.AVERAGE_HR), Metric(DataType.Type.MAX_HR)),
-    Stack("speed", R.string.field_4, "km/h", Metric(DataType.Type.SPEED, Format.SPEED), Metric(DataType.Type.AVERAGE_SPEED, Format.SPEED), Metric(DataType.Type.MAX_SPEED, Format.SPEED)),
-    Stack("distance", R.string.field_5, "km", Metric(DataType.Type.DISTANCE, Format.DISTANCE), Metric(DataType.Type.ELEVATION_GAIN), Metric(DataType.Type.ELEVATION_LOSS), "↗", "↘"),
+    Stack("speed", R.string.field_4, null, Metric(DataType.Type.SPEED, Format.SPEED), Metric(DataType.Type.AVERAGE_SPEED, Format.SPEED), Metric(DataType.Type.MAX_SPEED, Format.SPEED)),
+    Stack("distance", R.string.field_5, null, Metric(DataType.Type.DISTANCE, Format.DISTANCE),
+        Metric(DataType.Type.ELEVATION_GAIN, Format.ELEVATION), Metric(DataType.Type.ELEVATION_LOSS, Format.ELEVATION), "↗", "↘"),
     Stack("endurance", R.string.endurance_field, "NP/HR",
         Metric("endurance-ratio", Format.RATIO), Metric("endurance-drift", Format.DRIFT),
         Metric("endurance-z2"), "Drift", "Z2♥"),
@@ -258,19 +270,22 @@ private class StackedType(
                     }
                     view.setImageViewBitmap(R.id.icon, cachedIcon)
                     view.setContentDescription(R.id.icon, context.getString(stack.titleRes))
-                    view.setTextViewText(R.id.unit, stack.unit)
-                    val mainText = format(mainValue, stack.main.format)
+                    val preferredUnits = recordMonitor.preferredUnits
+                    val mainUnit = stack.unit ?: stack.main.format.unit(preferredUnits)
+                    view.setTextViewText(R.id.unit, mainUnit)
+                    val mainText = format(mainValue, stack.main.format, preferredUnits)
                     view.setTextViewText(R.id.main, mainText)
                     MainLineLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
-                        config.textSize, mainText, stack.unit)
-                    val leftUnit = if (stack.id == "distance") " m" else ""
-                    view.setTextViewText(R.id.left, "${stack.leftLabel} ${format(rawValue(stack.left, 1), stack.left.format)}$leftUnit")
+                        config.textSize, mainText, mainUnit)
+                    val elevationUnit = if (stack.left.format == Format.ELEVATION) " ${Format.ELEVATION.unit(preferredUnits)}" else ""
+                    val leftText = format(rawValue(stack.left, 1), stack.left.format, preferredUnits)
+                    view.setTextViewText(R.id.left, "${stack.leftLabel} $leftText$elevationUnit")
                     val right = stack.right
                     view.setViewVisibility(R.id.right, if (right == null) android.view.View.GONE else android.view.View.VISIBLE)
                     view.setTextViewText(R.id.right, right?.let {
                         val value = rawValue(it, 2)
-                        val unit = if (isEndurance && value != null) " W" else leftUnit
-                        "${stack.rightLabel} ${format(value, it.format)}$unit"
+                        val unit = if (isEndurance && value != null) " W" else elevationUnit
+                        "${stack.rightLabel} ${format(value, it.format, preferredUnits)}$unit"
                     } ?: "")
                     if (stack.id == "cadence") {
                         PedalFieldLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
@@ -285,7 +300,7 @@ private class StackedType(
                         val recordValue = record.value.toString()
                         view.setTextViewText(R.id.main, recordValue)
                         MainLineLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
-                            config.textSize, recordValue, stack.unit)
+                            config.textSize, recordValue, mainUnit)
                         view.setViewVisibility(R.id.zone, android.view.View.GONE)
                         view.setViewVisibility(R.id.right, android.view.View.GONE)
                         val message = when {
@@ -313,14 +328,17 @@ private class StackedType(
 
 }
 
-private fun format(value: Double?, format: Format): String {
+internal fun format(value: Double?, format: Format, preferred: PreferredUnit?): String {
     if (value == null || !value.isFinite() || (value < 0 && format != Format.DRIFT)) return "–"
     return when(format) {
         Format.RATIO -> String.format(Locale.getDefault(), "%.2f", value)
         Format.DRIFT -> String.format(Locale.getDefault(), "%+.1f%%", value)
         Format.INTEGER -> String.format(Locale.getDefault(), "%.0f", value)
-        Format.SPEED -> String.format(Locale.getDefault(), "%.1f", value * 3.6)
-        Format.DISTANCE -> String.format(Locale.getDefault(), "%.1f", value / 1000)
-        Format.TIME -> value.toLong().let { String.format(Locale.ROOT, "%d:%02d:%02d", it / 3600, it / 60 % 60, it % 60) }
+        Format.SPEED -> String.format(Locale.getDefault(), "%.1f",
+            if (preferred?.distance == IMPERIAL) value / 0.44704 else value * 3.6)
+        Format.DISTANCE -> String.format(Locale.getDefault(), "%.1f",
+            value / if (preferred?.distance == IMPERIAL) 1609.344 else 1000.0)
+        Format.ELEVATION -> String.format(Locale.getDefault(), "%.0f",
+            if (preferred?.elevation == IMPERIAL) value / 0.3048 else value)
     }
 }

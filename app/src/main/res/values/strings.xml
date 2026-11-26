@@ -88,7 +88,7 @@
   <string name="power_description">Live power with ride average and normalized power.</string>
   <string name="heart_description">Live heart rate with ride average and maximum.</string>
   <string name="speed_description">Live speed with ride average and maximum.</string>
-  <string name="distance_description">Distance ridden with elevation gain and descent.</string>
+  <string name="distance_description">Distance ridden with elevation gain and descent in your Karoo units.</string>
   <string name="cadence_description">Live cadence with ride stats or left/right power balance.</string>
   <string name="best_comparison_description">See your best power for each duration alongside your Intervals.icu benchmarks.</string>
   <string name="power_best_description">See your ride best and Intervals.icu benchmarks in a compact field that cycles through your chosen durations.</string>
