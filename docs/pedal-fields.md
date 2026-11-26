@@ -66,16 +66,6 @@ including zero and absent cadence. Device tests render the production RemoteView
 Remaining riding checks: compare native balance and TE/PS against the same sensors
 in Karoo's built-in fields; verify Favero/Garmin ANT+ model behavior, combined-PS handling,
 cadence-only sensors, reconnects, coasting, and firmware-specific unavailable sentinels.
-No public release is part of this change.
-
-Verified locally on 2026-11-25: debug and release builds; 52 unit tests per build
-variant; 22 script tests; lint without errors (warnings remain). Both Android
-instrumentation tests passed on the attached Karoo, including the production pedal
-layout at all sizes above. Device-rendered small Performance/Dynamics and missing-data
-images were inspected. The device exposed a header font-height difference that was
-fixed with native autosizing and covered by a 300 dpi regression test. The final
-release-signed local APK was installed with `adb install -r`, retaining app data,
-version and certificate. No release/tag/push was performed.
 
 To run instrumentation against the release-signed app without changing repository
 build settings, use a temporary Gradle init script setting `android.testBuildType =

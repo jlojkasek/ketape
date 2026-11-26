@@ -7,15 +7,15 @@ import org.json.JSONObject
 
 /** Reads verified resource names from installed Karoo apps. No guessed IDs or foreign code loading. */
 internal object KarooPalette {
-    data class Result(val power: List<Int>?, val heart: List<Int>?, val status: String)
+    data class Result(val power: List<Int>?, val heart: List<Int>?)
 
     fun load(context: Context): Result {
         val mapping = try {
             JSONObject(context.assets.open("karoo-zone-resources.json").bufferedReader().use { it.readText() })
         } catch (_: java.io.IOException) {
-            return Result(null, null, "Ersatzpalette: Karoo-Ressourcenzuordnung fehlt")
+            return Result(null, null)
         } catch (_: org.json.JSONException) {
-            return Result(null, null, "Ersatzpalette: Ressourcenzuordnung ungültig")
+            return Result(null, null)
         }
         fun read(key: String, count: Int): List<Int>? {
             val entries = mapping.optJSONArray(key) ?: return null
@@ -43,9 +43,6 @@ internal object KarooPalette {
                 null
             }
         }
-        val power = read("power", 7)
-        val heart = read("heart", 5)
-        return Result(power, heart, "Leistung: ${if (power != null) "Karoo-Ressourcen" else "Ersatzpalette"}\n" +
-            "Herzfrequenz: ${if (heart != null) "Karoo-Ressourcen" else "Ersatzpalette"}")
+        return Result(read("power", 7), read("heart", 5))
     }
 }
