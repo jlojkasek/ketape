@@ -10,10 +10,20 @@ import io.hammerhead.karooext.models.OnStreamState
 import io.hammerhead.karooext.models.PlayBeepPattern
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.*
 
 internal class RideRecordMonitor(context: Context, private val system: KarooSystemService) {
     val reserve = ReserveMonitor(context)
+    @Volatile var enduranceSnapshot = EnduranceSnapshot()
+        private set
+    @Volatile var enduranceRatio: Double? = null
+        private set
+    private var normalizedPower: Double? = null
+    private var averageHeartRate: Double? = null
+    private var endurance = EnduranceMetrics()
+    private var heartRateZoneTwo: IntRange? = null
+    private var zoneProfileConsumer: String? = null
     private val records = IntervalsRecords(context)
     private val prefs = context.getSharedPreferences("stacked", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -49,6 +59,12 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         profileConsumer = system.addConsumer<ActiveRideProfile> { event ->
             scope.launch { reserve.indoor = event.profile.indoor }
         }
+        zoneProfileConsumer = system.addConsumer<UserProfile> { profile ->
+            scope.launch {
+                heartRateZoneTwo = profile.heartRateZones.getOrNull(1)?.let { it.min..it.max }
+                    ?.takeUnless { it.isEmpty() }
+            }
+        }
         stateConsumer = system.addConsumer<RideState> { state ->
             scope.launch { onRideState(state) }
         }
@@ -57,9 +73,14 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
                 val now = SystemClock.elapsedRealtime()
                 if (rideState == RideState.Recording) {
                     val watts = power?.takeIf { now - it.at <= 1500 }?.value
-                    val bpm = heart?.takeIf { now - it.at <= 1500 && it.at != lastHeartReading }
+                    val freshHeart = heart?.takeIf { now - it.at <= 1500 }
+                    if (!continuity.incomplete) {
+                        enduranceSnapshot = endurance.sample(watts, freshHeart?.value, heartRateZoneTwo)
+                    }
+                    enduranceRatio = powerPerHeartRate(normalizedPower, averageHeartRate)
+                    val bpm = freshHeart?.takeIf { it.at != lastHeartReading }
                     lastHeartReading = heart?.at
-                    checkRecords(rideValues.sample(now / 1000, watts, bpm?.value))
+                    checkRecords(rideValues.sample(now / 1000, watts, bpm?.value?.takeIf { prefs.getBoolean(RECORD_HEART, false) }))
                 }
                 if (rideState != RideState.Idle && records.connected) showPending(now)
                 syncWhileIdle(now)
@@ -114,6 +135,8 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         power = null
         heart = null
         lastHeartReading = null
+        normalizedPower = null
+        averageHeartRate = null
         metrics.forEach(system::removeConsumer)
         metrics.clear()
         if (state == RideState.Recording) {
@@ -121,11 +144,14 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
                 power = it
                 reserve.sample(it?.at ?: SystemClock.elapsedRealtime(), it?.value, it?.source)
             }
-            if (prefs.getBoolean(RECORD_HEART, false)) {
-                metrics += subscribe(DataType.Type.HEART_RATE) { heart = it }
-            }
+            metrics += subscribe(DataType.Type.HEART_RATE) { heart = it }
+            metrics += subscribe(DataType.Type.NORMALIZED_POWER) { normalizedPower = it?.value }
+            metrics += subscribe(DataType.Type.AVERAGE_HR) { averageHeartRate = it?.value }
         }
         if (state == RideState.Idle) {
+            enduranceRatio = null
+            endurance = EnduranceMetrics()
+            enduranceSnapshot = EnduranceSnapshot()
             rideBests = emptyMap()
             announced.clear()
             pending.clear()
@@ -181,6 +207,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         scope.cancel()
         metrics.forEach(system::removeConsumer)
         profileConsumer?.let(system::removeConsumer)
+        zoneProfileConsumer?.let(system::removeConsumer)
         stateConsumer?.let(system::removeConsumer)
     }
 }

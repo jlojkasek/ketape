@@ -6,6 +6,7 @@ See your key ride metrics in less space, compare your power with your best effor
 
 ## Data fields
 
+- **Endurance** puts ride Normalized Power divided by average heart rate in the main row. The footer shows average watts while riding in Karoo heart-rate zone 2 and heart-rate drift. Drift is the percentage drop in average watts per beat per minute between the first and second halves of valid paired samples, shown after 20 minutes of paired data. A positive value means the ratio fell. Compare drift across steady endurance rides of similar duration and conditions. Stops while paused are excluded. If kEtape starts during a ride, drift and zone 2 average resume from the next full ride. NP/HR uses Karoo's ride summaries, so sensor gaps can make the two averages cover different data. The Z2♥ average includes valid power readings, including zero watts, when the corresponding heart rate is within the configured zone.
 - **Stacked Fields** pairs power, heart rate, speed, distance, or cadence with relevant metrics such as averages, maximums, Normalized Power, or elevation gain. You can adjust zone colors and smoothing.
 - **Palmarès** shows your best power efforts from the current ride in a compact field or table. Connect Intervals.icu to compare them with your season bests, your bests from the last 42 days, or both.
 - **Réserve** estimates how much W′ you have left. You can import your cycling parameters from Intervals.icu or enter critical power (CP) and W′ manually.

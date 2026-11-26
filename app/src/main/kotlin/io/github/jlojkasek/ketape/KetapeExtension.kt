@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 private data class Metric(val type: String, val format: Format = Format.INTEGER)
-private enum class Format { INTEGER, SPEED, DISTANCE, TIME }
+private enum class Format { INTEGER, SPEED, DISTANCE, TIME, RATIO, DRIFT }
 private data class Stack(val id: String, val titleRes: Int, val unit: String,
     val main: Metric, val left: Metric, val right: Metric?,
     val leftLabel: String = "Ø", val rightLabel: String = "MAX")
@@ -29,6 +29,9 @@ private val stacks = listOf(
     Stack("heart-rate", R.string.field_3, "bpm", Metric(DataType.Type.HEART_RATE), Metric(DataType.Type.AVERAGE_HR), Metric(DataType.Type.MAX_HR)),
     Stack("speed", R.string.field_4, "km/h", Metric(DataType.Type.SPEED, Format.SPEED), Metric(DataType.Type.AVERAGE_SPEED, Format.SPEED), Metric(DataType.Type.MAX_SPEED, Format.SPEED)),
     Stack("distance", R.string.field_5, "km", Metric(DataType.Type.DISTANCE, Format.DISTANCE), Metric(DataType.Type.ELEVATION_GAIN), Metric(DataType.Type.ELEVATION_LOSS), "↗", "↘"),
+    Stack("endurance", R.string.endurance_field, "NP/HR",
+        Metric("endurance-ratio", Format.RATIO), Metric("endurance-drift", Format.DRIFT),
+        Metric("endurance-z2"), "Drift", "Z2♥"),
     Stack("cadence", R.string.field_6, "rpm", Metric(DataType.Type.CADENCE), Metric(DataType.Type.AVERAGE_CADENCE), Metric(DataType.Type.MAX_CADENCE))
 )
 
@@ -60,6 +63,8 @@ private class StackedType(
 ) :
     DataTypeImpl("ketape", stack.id) {
 
+    private val isEndurance = stack.id == "endurance"
+
     private fun mainSmoothingSeconds(): Int =
         context.getSharedPreferences("stacked", Context.MODE_PRIVATE).getInt(smoothingKey(stack.id), 1)
             .takeIf { it in smoothingOptions } ?: 1
@@ -77,6 +82,19 @@ private class StackedType(
     }
 
     override fun startStream(emitter: Emitter<StreamState>) {
+        if (isEndurance) {
+            val job = CoroutineScope(Dispatchers.Default).launch {
+                while (isActive) {
+                    val ratio = recordMonitor.enduranceRatio
+                    emitter.onNext(ratio?.let {
+                        StreamState.Streaming(DataPoint(dataTypeId, mapOf(DataType.Field.SINGLE to it)))
+                    } ?: StreamState.NotAvailable)
+                    delay(1000)
+                }
+            }
+            emitter.setCancellable { job.cancel() }
+            return
+        }
         val id = subscribeMain { state, value ->
             emitter.onNext(if (state is StreamState.Streaming) {
                 if (value != null) StreamState.Streaming(
@@ -111,7 +129,7 @@ private class StackedType(
                 timestamps.remove(type)
             }
         }
-        val ids = if (config.preview) emptyList() else {
+        val ids = if (config.preview || isEndurance) emptyList() else {
             val main = subscribeMain { _, value -> storeValue(stack.main.type, value) }
             listOf(main) + metrics.map { it.type }.distinct().map { type ->
                 system.addConsumer<OnStreamState>(OnStreamState.StartStreaming(type)) { event ->
@@ -153,7 +171,19 @@ private class StackedType(
                         view.setInt(it, "setGravity", android.view.Gravity.CENTER)
                     }
                     // The compact main group is measured below; footer cells keep native autosizing.
+                    val endurance = recordMonitor.enduranceSnapshot
                     fun rawValue(metric: Metric, index: Int): Double? =
+                        if (isEndurance) {
+                            if (config.preview) when (index) {
+                                0 -> 1.42 + (previewTick % 5) / 100.0
+                                1 -> 2.1 + (previewTick % 5) / 10.0
+                                else -> 184.0 + previewTick % 5
+                            } else when (index) {
+                                0 -> recordMonitor.enduranceRatio
+                                1 -> endurance.drift
+                                else -> endurance.zoneTwoPower
+                            }
+                        } else
                         if (config.preview) when (index) {
                             0 -> if (stack.id == "cadence") PreviewValues.cadence(previewTick) else previewFrame.main
                             1 -> previewFrame.average
@@ -211,7 +241,7 @@ private class StackedType(
                     view.setTextViewText(R.id.zone, badgeZone?.let { "Z${it.number}" } ?: "")
                     val iconResource = when {
                         isPower -> R.drawable.ic_power
-                        stack.id == "heart-rate" -> R.drawable.ic_heart
+                        stack.id == "heart-rate" || isEndurance -> R.drawable.ic_heart
                         stack.id == "speed" -> R.drawable.ic_speed
                         stack.id == "distance" -> R.drawable.ic_distance
                         else -> R.drawable.ic_cadence
@@ -238,7 +268,9 @@ private class StackedType(
                     val right = stack.right
                     view.setViewVisibility(R.id.right, if (right == null) android.view.View.GONE else android.view.View.VISIBLE)
                     view.setTextViewText(R.id.right, right?.let {
-                        "${stack.rightLabel} ${format(rawValue(it, 2), it.format)}$leftUnit"
+                        val value = rawValue(it, 2)
+                        val unit = if (isEndurance && value != null) " W" else leftUnit
+                        "${stack.rightLabel} ${format(value, it.format)}$unit"
                     } ?: "")
                     if (stack.id == "cadence") {
                         PedalFieldLayout.apply(context, view, config.viewSize.first, config.viewSize.second,
@@ -282,8 +314,10 @@ private class StackedType(
 }
 
 private fun format(value: Double?, format: Format): String {
-    if (value == null || !value.isFinite() || value < 0) return "--"
+    if (value == null || !value.isFinite() || (value < 0 && format != Format.DRIFT)) return "--"
     return when(format) {
+        Format.RATIO -> String.format(Locale.getDefault(), "%.2f", value)
+        Format.DRIFT -> String.format(Locale.getDefault(), "%+.1f%%", value)
         Format.INTEGER -> String.format(Locale.getDefault(), "%.0f", value)
         Format.SPEED -> String.format(Locale.getDefault(), "%.1f", value * 3.6)
         Format.DISTANCE -> String.format(Locale.getDefault(), "%.1f", value / 1000)

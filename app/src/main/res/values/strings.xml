@@ -109,4 +109,6 @@
   <string name="pedal_classic_detail">Average and maximum cadence. Optional left/right balance.</string>
   <string name="pedal_performance_detail">Left/right balance and average pedal smoothness (PS). The average requires a reading from each pedal.</string>
   <string name="pedal_dynamics_detail">Left/right balance, torque effectiveness and pedal smoothness. TE and PS require compatible pedals.</string>
+    <string name="endurance_field">Endurance</string>
+    <string name="endurance_description">Normalized Power divided by average heart rate, power-to-heart-rate drift, and average power at a heart rate in your Karoo heart-rate zone 2. Drift compares the power-to-heart-rate ratio of both ride halves after 20 minutes of paired data.</string>
 </resources>

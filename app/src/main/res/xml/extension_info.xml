@@ -3,6 +3,7 @@
   <DataType typeId="heart-rate" displayName="@string/field_3" description="@string/heart_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="speed" displayName="@string/field_4" description="@string/speed_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="distance" displayName="@string/field_5" description="@string/distance_description" graphical="true" icon="@drawable/ic_stacked" />
+  <DataType typeId="endurance" displayName="@string/endurance_field" description="@string/endurance_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="cadence" displayName="@string/field_6" description="@string/cadence_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="palmares-table" displayName="@string/power_best_table" description="@string/best_comparison_description" graphical="true" icon="@drawable/ic_stacked" />
   <DataType typeId="palmares-auto" displayName="@string/power_best_auto" description="@string/power_best_description" graphical="true" icon="@drawable/ic_power" />

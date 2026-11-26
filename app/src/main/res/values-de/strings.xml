@@ -108,4 +108,6 @@
   <string name="pedal_classic_detail">Durchschnitt und Maximum der Trittfrequenz. Optional Links-rechts-Balance.</string>
   <string name="pedal_performance_detail">Links-rechts-Balance und mittlere Trittgleichmäßigkeit (PS). Der Mittelwert braucht einen Messwert von beiden Pedalen.</string>
   <string name="pedal_dynamics_detail">Links-rechts-Balance, Drehmomenteffektivität und Gleichmäßigkeit. TE und PS benötigen kompatible Pedale.</string>
+    <string name="endurance_field">Ausdauer</string>
+    <string name="endurance_description">Normalisierte Leistung geteilt durch den Durchschnittspuls, Drift im Watt-Puls-Verhältnis und Durchschnittsleistung bei Puls in deiner Karoo-Herzfrequenzzone 2. Der Drift vergleicht das Watt-Puls-Verhältnis beider Fahrthälften ab 20 Minuten gemeinsamer Messdaten.</string>
 </resources>
