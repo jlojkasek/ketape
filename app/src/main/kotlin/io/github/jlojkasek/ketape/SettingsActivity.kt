@@ -2,6 +2,10 @@ package io.github.jlojkasek.ketape
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -12,6 +16,7 @@ import android.text.TextUtils
 import android.text.method.PasswordTransformationMethod
 import android.text.format.DateFormat
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
@@ -206,6 +211,19 @@ class SettingsActivity : Activity() {
         }
 
         val about = settingsPage {
+            addView(label(R.string.info_fields, heading = true))
+            addInfoTopic(R.string.pedal_settings_title, R.string.info_pedals,
+                R.string.info_source_srm to "https://www.srm.de/vocabulary-and-metrics-cycling-power-meter/",
+                R.string.info_source_mornieux to "https://pubmed.ncbi.nlm.nih.gov/18418807/")
+            addInfoTopic(R.string.ride_load_field, R.string.info_ride_load,
+                R.string.info_source_coggan to "https://www.trainingpeaks.com/learn/articles/normalized-power-intensity-factor-training-stress/")
+            addInfoTopic(R.string.endurance_field, R.string.endurance_help)
+            addInfoTopic(R.string.best_comparison, R.string.info_palmares, extra = R.string.ride_continuity_help)
+            addInfoTopic(R.string.info_reserve_title, R.string.info_reserve,
+                R.string.info_source_skiba_original to "https://pubmed.ncbi.nlm.nih.gov/22382171/",
+                R.string.info_source_skiba to "https://doi.org/10.1123/ijspp.2021-0205")
+            addInfoTopic(R.string.info_display_title, R.string.info_display,
+                R.string.info_source_hammerhead to "https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend")
             addView(label(R.string.settings_about, heading = true))
             addView(label(R.string.settings_setup))
             addView(label(R.string.settings_updates).apply { setPadding(0, dp(8), 0, 0) })
@@ -213,8 +231,6 @@ class SettingsActivity : Activity() {
                 text = getString(R.string.settings_version, BuildConfig.VERSION_NAME)
                 setPadding(0, dp(8), 0, 0)
             })
-            addView(label(R.string.endurance_field, heading = true))
-            addView(label(R.string.endurance_help).apply { setPadding(0, dp(8), 0, 0) })
         }
 
         val reserve = settingsPage { addView(createReserveSettings()) }
@@ -288,6 +304,51 @@ class SettingsActivity : Activity() {
             setPadding(dp(16), 0, dp(16), dp(16))
             content()
         })
+    }
+
+    private fun LinearLayout.addInfoTopic(title: Int, description: Int, vararg sources: Pair<Int, String>,
+        extra: Int? = null) {
+        val details = LinearLayout(this@SettingsActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(dp(8), dp(4), dp(8), dp(12))
+            addView(label(description))
+            extra?.let { addView(label(it).apply { setPadding(0, dp(8), 0, 0) }) }
+            sources.forEach { (name, url) ->
+                addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                    setText(name)
+                    isAllCaps = false
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    minHeight = dp(48)
+                    setOnClickListener {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        } catch (_: ActivityNotFoundException) {
+                            getSystemService(ClipboardManager::class.java)
+                                .setPrimaryClip(ClipData.newPlainText(text, url))
+                            Toast.makeText(this@SettingsActivity, R.string.info_source_copied, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                })
+            }
+        }
+        addView(Button(this@SettingsActivity).apply {
+            setText(title)
+            isAllCaps = false
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            minHeight = dp(48)
+            fun updateState(expanded: Boolean) {
+                details.visibility = if (expanded) View.VISIBLE else View.GONE
+                val arrow = if (expanded) android.R.drawable.arrow_up_float else android.R.drawable.arrow_down_float
+                setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, arrow, 0)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    stateDescription = getString(if (expanded) R.string.info_expanded else R.string.info_collapsed)
+                }
+            }
+            updateState(false)
+            setOnClickListener { updateState(details.visibility == View.GONE) }
+        })
+        addView(details)
     }
 
     private fun confirmSettingsReset() {

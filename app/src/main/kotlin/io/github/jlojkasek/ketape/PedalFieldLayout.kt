@@ -26,7 +26,7 @@ internal object PedalFieldLayout {
             }
             PedalLayout.PERFORMANCE -> {
                 view.setTextViewText(R.id.left, balance)
-                view.setTextViewText(R.id.right, pedals.combinedPsText)
+                view.setTextViewText(R.id.right, pedals.performancePsText)
                 view.setViewVisibility(R.id.right, View.VISIBLE)
             }
             PedalLayout.DYNAMICS -> {

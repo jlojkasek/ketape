@@ -108,8 +108,8 @@
   <string name="pedal_layout_title">Pedalansicht</string>
   <string name="pedal_layout_value">Ansicht · %1$s</string>
   <string name="pedal_classic_detail">Durchschnitt und Maximum der Trittfrequenz. Optional Links-rechts-Balance.</string>
-  <string name="pedal_performance_detail">Links-rechts-Balance und mittlere Trittgleichmäßigkeit (PS). Der Mittelwert braucht einen Messwert von beiden Pedalen.</string>
-  <string name="pedal_dynamics_detail">Links-rechts-Balance, Drehmomenteffektivität und Gleichmäßigkeit. TE und PS benötigen kompatible Pedale.</string>
+  <string name="pedal_performance_detail">Links-rechts-Balance und Trittgleichmäßigkeit (PS). Zwei Messwerte werden gemittelt. Ein einzelner Wert ist mit L oder R markiert. PS benötigt einen kompatiblen Leistungsmesser.</string>
+  <string name="pedal_dynamics_detail">Links-rechts-Balance, Drehmomenteffektivität und Trittgleichmäßigkeit. TE und PS benötigen einen kompatiblen Leistungsmesser.</string>
     <string name="endurance_field">Ausdauer</string>
     <string name="endurance_description">Normalisierte Leistung geteilt durch den Durchschnittspuls, Drift im Watt-Puls-Verhältnis und Durchschnittsleistung bei Puls in deiner Karoo-Herzfrequenzzone 2. Der Drift vergleicht das Watt-Puls-Verhältnis beider Fahrthälften ab 20 Minuten gemeinsamer Messdaten.</string>
   <string name="records_update_key">API-Schlüssel aktualisieren</string>
@@ -118,7 +118,7 @@
   <string name="records_notifications">Bestwertmeldungen</string>
   <string name="records_notifications_detail">Meldungen verwenden deine gespeicherten Intervals.icu-Bestwerte. Verbinde dazu ein Konto.</string>
   <string name="comparison_accessible_stale_reference">%1$s-Referenz %2$s, älter als 48 Stunden</string>
-  <string name="endurance_help">NP/HR ist normalisierte Leistung geteilt durch den Durchschnittspuls. Z2♥ zeigt die Durchschnittsleistung in Herzfrequenzzone 2. Drift vergleicht die beiden Fahrthälften ab 20 Minuten gemeinsamer Leistungs- und Pulsmessdaten. Ein positiver Drift bedeutet, dass das Watt-Puls-Verhältnis gesunken ist. Ein Strich steht für fehlende oder noch unzureichende Messdaten. Nach einem Neustart der Erweiterung während der Fahrt sind Drift und Z2♥ ab der nächsten vollständigen Fahrt wieder verfügbar.</string>
+  <string name="endurance_help">NP/HR teilt die normalisierte Leistung des Karoo durch seinen Durchschnittspuls. Z2♥ zeigt die Durchschnittsleistung, solange dein Puls in Karoo-Herzfrequenzzone 2 liegt. Gemessene null Watt zählen mit.\n\nDrift vergleicht das Verhältnis von Durchschnittsleistung zu Durchschnittspuls in der ersten und zweiten Hälfte der gemeinsamen Messdaten. Dafür braucht es insgesamt mindestens 20 Minuten mit Leistungs- und Pulswerten. Aufzeichnungspausen zählen nicht mit. Bei positivem Drift ist das Watt-Puls-Verhältnis in der zweiten Hälfte gesunken. Vergleiche gleichmäßige Fahrten unter ähnlichen Bedingungen.\n\nEin Strich steht für fehlende oder noch unzureichende Daten. Startet kEtape während der Fahrt neu, erscheinen Drift und Z2♥ ab der nächsten vollständigen Fahrt wieder.</string>
   <string name="comparison_accessible_recent_record">%1$s, neuer 42-Tage-Rekord</string>
   <string name="comparison_accessible_all_time_record">%1$s, neuer Allzeitrekord</string>
   <string name="records_all_time">Allzeit</string>

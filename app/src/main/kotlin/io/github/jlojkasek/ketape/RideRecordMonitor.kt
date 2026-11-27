@@ -45,6 +45,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
     private var nextAutomaticSyncAt = 0L
     private var automaticSync: Job? = null
     private var lastHeartReading: Long? = null
+    private var pauseStartedSecond: Long? = null
     @Volatile private var rideState: RideState = RideState.Idle
     @Volatile private var periods = records.periods
     private var power: Reading? = null
@@ -89,9 +90,13 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
                     val bpm = freshHeart?.takeIf { it.at != lastHeartReading }
                     lastHeartReading = heart?.at
                     checkRecords(rideValues.sample(now / 1000, watts, bpm?.value?.takeIf { prefs.getBoolean(RECORD_HEART, false) }))
-                    updateTableRecords()
+                } else {
+                    pauseStartedSecond?.let { checkRecords(rideValues.samplePause(it, now / 1000)) }
                 }
-                if (rideState != RideState.Idle && records.connected) showPending(now)
+                if (rideState != RideState.Idle) {
+                    updateTableRecords()
+                    if (records.connected) showPending(now)
+                }
                 if (idleConfirmed) syncAutomatically(now)
                 reserve.tick()
                 delay(1000 - (SystemClock.elapsedRealtime() % 1000))
@@ -125,12 +130,22 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
         continuity.observe(state)
         reserve.onState(state)
         if (state == rideState) return
+        val now = SystemClock.elapsedRealtime()
+        val nextSecond = (now + 999) / 1000
         if (rideState == RideState.Idle) {
             periods = records.periods
-            syncAutomatically(SystemClock.elapsedRealtime())
+            syncAutomatically(now)
+        }
+        if (state is RideState.Paused) {
+            if (pauseStartedSecond == null) pauseStartedSecond = nextSecond
+        } else {
+            pauseStartedSecond?.let {
+                checkRecords(rideValues.samplePause(it, nextSecond - 1))
+                updateTableRecords()
+            }
+            pauseStartedSecond = null
         }
         rideState = state
-        rideValues.reset()
         power = null
         heart = null
         lastHeartReading = null
@@ -148,6 +163,7 @@ internal class RideRecordMonitor(context: Context, private val system: KarooSyst
             metrics += subscribe(DataType.Type.AVERAGE_HR) { averageHeartRate = it?.value }
         }
         if (state == RideState.Idle) {
+            rideValues.reset()
             tableRecords.account?.let { records.saveTableRecords(it, tableRecords.marks, rideBests) }
             tableRecords = TableRecords()
             lastTableReferences = null

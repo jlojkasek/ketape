@@ -5,7 +5,9 @@
 Unter Trittfrequenz stehen Classic, Performance und Dynamics zur Wahl. Classic
 bleibt Standard und behält Ø/Max sowie die vorhandene optionale Balance-Einstellung.
 Balance wird immer als links/rechts gezeigt, etwa 48/52. Performance ergänzt unten
-den Mittelwert der Trittgleichmäßigkeit (PS) aus beiden Seiten. Dynamics zeigt Balance im Header sowie TE % und PS % unten.
+den Mittelwert der Trittgleichmäßigkeit (PS) aus beiden Seiten. Ein einzelner Messwert
+erscheint mit Seitenkürzel, etwa `PS L 24 %`. Assioma PRO sendet PS und TE über ANT+.
+Dynamics zeigt Balance im Header sowie TE % und PS % unten.
 Die Kadenz-Glättung bleibt unverändert einstellbar; Balance nutzt
 native 3s-Mittelwerte. Ein ! ergänzt eine aktivierte Balance-Warnung unabhängig
 von der Warnfarbe. Fehlende Daten erscheinen als Strich, gültige Nullen bleiben
@@ -15,7 +17,9 @@ sichtbar. Ein reiner Kadenzsensor funktioniert weiterhin ohne Pedaldaten.
 
 Choose Classic, Performance or Dynamics under cadence. Classic remains the default
 and preserves average/max and the existing optional balance setting. Balance always
-reads left/right, e.g. 48/52. Performance adds the mean of both Pedal Smoothness (PS) readings below cadence. Dynamics
+reads left/right, e.g. 48/52. Performance averages both Pedal Smoothness (PS) readings.
+A single reading is marked with its side, for example `PS L 24 %`. Assioma PRO sends
+PS and TE over ANT+. Dynamics
 places balance in the header, with TE % and PS % below. The existing cadence smoothing
 setting is retained; balance uses native 3s averages. An ! supplements an
 enabled balance warning independently of its color. Missing data appears as a dash;
@@ -37,7 +41,8 @@ The installed app consumes Karoo streams, not raw ANT packets.
 `DataType.kt` explicitly names the optional left balance field; there is no native
 right balance field in this SDK. The complement is only calculated after validating
 a native left share in 0…100. TE/PS must be finite and within 0…100; they are never
-complemented or mirrored. Performance averages the two valid PS readings before rounding. It displays a dash if either side is unavailable. A missing field or
+complemented or mirrored. Performance averages two valid PS readings before rounding.
+It displays a dash when both sides are unavailable. A missing field or
 non-streaming event clears its value, and each complete stream snapshot expires after
 5 seconds without updates. A stream containing only POWER cannot create pedal data.
 

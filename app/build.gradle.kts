@@ -7,8 +7,8 @@ android {
         applicationId = "io.github.jlojkasek.ketape"
         minSdk = 23
         targetSdk = 34
-        versionCode = 22
-        versionName = "1.1.10"
+        versionCode = 23
+        versionName = "1.1.11"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { buildConfig = true }

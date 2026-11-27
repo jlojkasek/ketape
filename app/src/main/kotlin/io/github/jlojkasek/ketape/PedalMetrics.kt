@@ -1,6 +1,7 @@
 package io.github.jlojkasek.ketape
 
 import io.hammerhead.karooext.models.DataType
+import kotlin.math.roundToInt
 
 internal const val PEDAL_LAYOUT_KEY = "cadence_layout"
 internal enum class PedalLayout(val key: String) {
@@ -25,12 +26,16 @@ internal data class PedalMetrics(
 ) {
     val balance get() = pedalBalance(balanceLeft)
     val balanceText get() = balance?.let { "${it.first}/${it.second}" } ?: "–/–"
-    val combinedPsText: String
+    val performancePsText: String
         get() {
             val left = validPedalPercent(psLeft)
             val right = validPedalPercent(psRight)
-            val mean = if (left != null && right != null) pedalPercent((left + right) / 2) else null
-            return "PS ${mean ?: "–"} %"
+            return when {
+                left != null && right != null -> "PS ${((left + right) / 2).roundToInt()} %"
+                left != null -> "PS L ${left.roundToInt()} %"
+                right != null -> "PS R ${right.roundToInt()} %"
+                else -> "PS – %"
+            }
         }
     val teText get() = "TE % ${pedalPair(teLeft, teRight)}"
     val psText get() = "PS % ${pedalPair(psLeft, psRight)}"

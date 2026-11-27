@@ -109,8 +109,8 @@
   <string name="pedal_layout_title">Pedal layout</string>
   <string name="pedal_layout_value">Layout · %1$s</string>
   <string name="pedal_classic_detail">Average and maximum cadence. Optional left/right balance.</string>
-  <string name="pedal_performance_detail">Left/right balance and average pedal smoothness (PS). The average requires a reading from each pedal.</string>
-  <string name="pedal_dynamics_detail">Left/right balance, torque effectiveness and pedal smoothness. TE and PS require compatible pedals.</string>
+  <string name="pedal_performance_detail">Left/right balance and pedal smoothness (PS). Two readings are averaged. A single reading is marked L or R. PS requires a compatible power meter.</string>
+  <string name="pedal_dynamics_detail">Left/right balance, torque effectiveness and pedal smoothness. TE and PS require a compatible power meter.</string>
     <string name="endurance_field">Endurance</string>
     <string name="endurance_description">Normalized Power divided by average heart rate, power-to-heart-rate drift, and average power at a heart rate in your Karoo heart-rate zone 2. Drift compares the power-to-heart-rate ratio of both ride halves after 20 minutes of paired data.</string>
   <string name="records_update_key">Update API key</string>
@@ -119,7 +119,7 @@
   <string name="records_notifications">Best-effort alerts</string>
   <string name="records_notifications_detail">Alerts use your saved Intervals.icu benchmarks. Connect an account to use them.</string>
   <string name="comparison_accessible_stale_reference">%1$s reference %2$s, over 48 hours old</string>
-  <string name="endurance_help">NP/HR means normalized power divided by average heart rate. Z2♥ is average power in heart-rate zone 2. Drift compares the two halves of the ride after 20 minutes of paired power and heart-rate data. A positive drift means watts per heartbeat fell. A dash indicates that more data is needed or a measurement is unavailable. After an extension restart during a ride, drift and Z2♥ are available again in the next full ride.</string>
+  <string name="endurance_help">NP/HR divides the Karoo’s normalized power by its average heart rate. Z2♥ is the average power while your heart rate is in Karoo zone 2. It includes measured zero watts.\n\nDrift compares the ratio of average watts to average heart rate in the first and second halves of the paired data. Both power and heart rate must be present for at least 20 minutes in total, excluding recording pauses. A positive drift means you produced fewer watts per beat per minute in the second half. Compare rides with similar conditions and a steady effort.\n\nA dash means more data is needed or a reading is unavailable. After kEtape restarts during a ride, Drift and Z2♥ return on the next complete ride.</string>
   <string name="comparison_accessible_recent_record">%1$s, new 42-day record</string>
   <string name="comparison_accessible_all_time_record">%1$s, new all-time record</string>
   <string name="records_all_time">All time</string>

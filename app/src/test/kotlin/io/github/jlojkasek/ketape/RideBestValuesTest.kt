@@ -40,13 +40,93 @@ class RideBestValuesTest {
         assertTrue(RideBest(3600, 3599) in recorder.sample(3600, 0.0, null))
     }
 
-    @Test fun gapsAndPausesRequireFreshCompleteWindows() {
+    @Test fun longWindowsSurviveShortGapsWithoutInflatingPower() {
+        val recorder = RideBestValues()
+        for (second in 0L..4500L) {
+            val missing = second % 600 in 100L..102L
+            // Some gaps have no ticks at all, others have ticks without sensor data.
+            if (missing && second < 1200) continue
+            val values = recorder.sample(second, 250.0.takeUnless { missing }, null)
+            when (second) {
+                2698L -> assertFalse(values.any { it.duration == 2700 })
+                2699L -> assertTrue(RideBest(2700, 249) in values)
+                3598L -> assertFalse(values.any { it.duration == 3600 })
+                3599L, 4500L -> assertTrue(RideBest(3600, 249) in values)
+            }
+        }
+    }
+
+    @Test fun longSensorGapsDoNotEraseElapsedTime() {
+        val recorder = RideBestValues()
+        for (second in 0L..3599L) {
+            val missing = second % 1200 in 600L..608L
+            val values = recorder.sample(second, 250.0.takeUnless { missing }, null)
+            when (second) {
+                2698L -> assertFalse(values.any { it.duration == 2700 })
+                2699L -> assertTrue(RideBest(2700, 248) in values)
+                3598L -> assertFalse(values.any { it.duration == 3600 })
+                3599L -> assertTrue(RideBest(3600, 248) in values)
+            }
+        }
+    }
+
+    @Test fun newRidesRequireFreshCompleteWindows() {
         val recorder = RideBestValues()
         for (second in 0L..3L) recorder.sample(second, 500.0, null)
-        assertEquals(listOf(RideBest(1, 500)), recorder.sample(5, 500.0, null))
-        assertTrue(recorder.sample(5, 900.0, null).isEmpty())
+        assertTrue(recorder.sample(3, 900.0, null).isEmpty())
         recorder.reset()
-        assertEquals(listOf(RideBest(1, 500)), recorder.sample(6, 500.0, null))
+        assertEquals(listOf(RideBest(1, 500)), recorder.sample(4, 500.0, null))
+    }
+
+    @Test fun fortyFiveAndSixtyMinuteWindowsIncludePauseAtZeroWatts() {
+        val recorder = RideBestValues()
+        for (second in 0L..1199L) recorder.sample(second, 250.0, null)
+        recorder.samplePause(1200, 1210)
+        // The recording loop can miss ticks while the Karoo is paused.
+        recorder.samplePause(1200, 1319)
+        for (second in 1320L..3599L) {
+            val values = recorder.sample(second, 250.0, null)
+            when (second) {
+                2698L -> assertFalse(values.any { it.duration == 2700 })
+                2699L -> assertTrue(RideBest(2700, 239) in values)
+                3598L -> assertFalse(values.any { it.duration == 3600 })
+                3599L -> assertTrue(RideBest(3600, 242) in values)
+            }
+        }
+    }
+
+    @Test fun bestCanCompleteWhilePausedAndLongPauseRollsOutOldPower() {
+        val recorder = RideBestValues()
+        for (second in 0L..3L) recorder.sample(second, 250.0, 120.0)
+        assertTrue(RideBest(5, 200) in recorder.samplePause(4, 4))
+        assertTrue(recorder.samplePause(4, 4).isEmpty())
+        val paused = recorder.samplePause(4, 5000)
+        assertTrue(paused.none { it.duration == HEART_RECORD })
+        assertTrue(RideBest(3600, 0) in paused)
+        val resumed = recorder.sample(5001, 300.0, 125.0)
+        assertTrue(RideBest(5, 60) in resumed)
+        assertTrue(resumed.none { it.duration == HEART_RECORD })
+    }
+
+    @Test fun pauseBeforeAnyValidPowerDoesNotCreateBests() {
+        val recorder = RideBestValues()
+        assertTrue(recorder.samplePause(0, 60).isEmpty())
+        assertEquals(listOf(RideBest(1, 200)), recorder.sample(61, 200.0, null))
+    }
+
+    @Test fun evenAPauseWithoutAFullSecondBreaksTheHeartRatePair() {
+        val recorder = RideBestValues()
+        recorder.sample(0, 200.0, 180.0)
+        assertTrue(recorder.samplePause(1, 0).isEmpty())
+        assertEquals(listOf(RideBest(1, 200)), recorder.sample(1, 200.0, 185.0))
+    }
+
+    @Test fun shortGapCanCompleteAWindowOncePowerResumes() {
+        val recorder = RideBestValues()
+        for (second in 0L..3L) recorder.sample(second, 500.0, null)
+        assertTrue(recorder.sample(4, null, null).isEmpty())
+        val fiveSecondValues = recorder.sample(5, 100.0, null).filter { it.duration == 5 }
+        assertEquals(listOf(RideBest(5, 400), RideBest(5, 320)), fiveSecondValues)
     }
 
     @Test fun heartRateRequiresTwoConsecutiveReadingsAboveThreshold() {

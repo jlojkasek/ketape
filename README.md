@@ -18,7 +18,7 @@ See a main reading and its ride summaries in the same data field. The screenshot
 | Heart Rate | Beats per minute | Ride average and maximum |
 | Speed | Speed in km/h or mph (e.g. 32.2 km/h or 20.0 mph) | Ride average and maximum in the same unit |
 | Distance | Distance in km or mi (e.g. 16.1 km or 10.0 mi) | Elevation gained and lost in m or ft (e.g. 305 m or 1,000 ft) |
-| Cadence | rpm | Ride average and maximum in Classic. Compatible pedal sensors can add left/right balance, pedal smoothness and torque effectiveness. |
+| Cadence | rpm | Ride average and maximum in Classic. Performance shows balance and pedal smoothness, for example `PS L 24 %` if only the left reading is available. Dynamics shows pedal smoothness and torque effectiveness per side. Assioma PRO sends these two metrics over ANT+. |
 | Ride Load | Training Stress Score (e.g. 64 TSS) | Calories burned from power (e.g. 684 kcal) and Intensity Factor (e.g. 0.80 IF) |
 
 Speed and distance use the Karoo's distance setting. Ascent and descent use its separate elevation setting. With Mixed units, you can see miles and metres together. You can smooth the main reading for power, heart rate, speed and cadence. Power and heart rate can show the zone from your Karoo profile as a background color or a small badge. [Cadence and pedal layouts](docs/pedal-fields.md#usage-english)
@@ -40,6 +40,8 @@ Compare your best power for each selected duration. **Palmarès** cycles through
 ![Palmarès Table shows a 42-day record of 849 watts in green and an all-time record of 467 watts in purple. Compact Palmarès shows the five-second ride best alongside both benchmarks.](docs/images/palmares.png)
 
 Both fields show your current ride bests. Connect Intervals.icu to add benchmarks. In the **Palmarès** tab, select one or two periods for both fields: current season (S), last 42 days (42), or all time (A). In the table, a new **42-day best** turns the ride value green and a new **all-time best** turns it purple. Purple takes priority if both records are beaten. The colors clear at ride end. An asterisk (`*`) marks ride bests recorded since the extension restarted. A dagger (`†`) marks references more than 48 hours old.
+
+Ride bests use elapsed time. Coasting, manual pauses and Auto Pause count as zero watts in the rolling window. When power readings resume after a gap, the missing seconds also count as zero watts. Uploaded power curves can differ if the service corrects sensor data or if the recording used a different power source.
 
 ## Réserve
 
@@ -72,6 +74,12 @@ In **General**, connect with a personal Intervals.icu API key. kEtape stores the
 kEtape refreshes the references after a Karoo restart when the device is online and idle, with up to three attempts. During normal use, it checks for updates while idle and waits a day before automatically retrying a failed refresh. The last downloaded values are available offline. See the last refresh in **Palmarès** or **Réserve**.
 
 ## What's new
+
+### 1.1.11 · Palmarès, pedal data and field guide
+
+- **Palmarès** includes coasting, pauses and missing seconds between valid readings in the elapsed-time power window.
+- **Cadence Performance** shows pedal smoothness from either side when only one reading is available.
+- **Info** explains the data fields and links to their references, including the research behind Réserve.
 
 ### 1.1.10 · Karoo units
 
